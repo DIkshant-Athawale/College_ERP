@@ -1,0 +1,221 @@
+body {
+  background: linear-gradient(135deg, #050505, #3A0CA3);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: Arial, sans-serif;
+}
+
+body {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #050505, #3A0CA3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* MAIN CONTAINER */
+/* .login-wrapper {
+  width: 90%;
+  max-width: 1000px;
+  min-height: 450px;
+  background: linear-gradient(145deg, #3A0CA3, #050505);
+  border-radius: 20px;
+  display: flex;
+  overflow: hidden;
+  box-shadow: 0 15px 40px rgba(0,0,0,0.4);
+} */
+
+.login-wrapper {
+  width: 90%;
+  max-width: 1000px;
+  min-height: 450px;
+  background: linear-gradient(145deg, #3A0CA3, #050505);
+  border-radius: 20px;
+  display: flex;
+  overflow: hidden;
+  box-shadow: 0 15px 40px rgba(0,0,0,0.4);
+  animation: fadeUp 0.8s ease;
+
+
+  /* ✅ ADD THESE 2 LINES */
+  transition: transform 0.4s ease, box-shadow 0.4s ease;
+}
+/* ✅ CARD HOVER ANIMATION */
+.login-wrapper:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6);
+}
+
+
+/* LEFT LOGO SECTION */
+.logo-section {
+  width: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.logo-section img {
+  width: 180px;
+  margin-bottom: 15px;
+}
+
+/* RIGHT LOGIN SECTION */
+.login-box {
+  width: 50%;
+  background: rgba(0,0,0,0.25);
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.login-box h3 {
+  color: white;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+/* LABEL */
+.login-box label {
+  color: #ffffff;
+  font-size: 14px;
+  margin-bottom: 6px;
+  display: block;
+}
+
+/* INPUTS & SELECT */
+.login-box input,
+.login-box select {
+  color: #333;
+  margin-bottom: 15px;
+  padding: 12px;
+  border-radius: 8px;
+  border: none;
+  outline: none;
+}
+
+/* FOCUS EFFECT */
+.login-box input:focus,
+.login-box select:focus {
+  box-shadow: 0 0 8px rgba(0, 194, 255, 0.6);
+}
+
+/* LOGIN BUTTON */
+.login-box button {
+  padding: 12px;
+  border-radius: 30px;
+  border: none;
+  background: linear-gradient(135deg, #3b82f6, #1e40af);
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+box-shadow: 0 10px 18px rgba(59, 130, 246, 0.45);
+}
+.login-box button:active {
+  transform: scale(0.96);
+}
+ 
+
+/* ✅ THIS IS THE KEY PART */
+/* .login-box button:hover { 
+  background-color: #ffffff;  /* FULL WHITE */
+  /* color: #560bad;
+} */ */
+
+
+
+button:before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  background: var(--color);
+  height: 150px;
+  width: 200px;
+  border-radius: 50%;
+}
+
+button:hover {
+  color: #fff;
+}
+
+button:before {
+  top: 100%;
+  left: 100%;
+  transition: all 0.7s;
+}
+
+button:hover:before {
+  top: -30px;
+  left: -30px;
+}
+
+button:active:before {
+  background: #3a0ca3;
+  transition: background 0s;
+}
+
+
+
+button:active:before {
+  background: #3a0ca3;
+  transition: background 0s;
+}
+
+.login-box button:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 25px rgba(0, 194, 255, 0.6);
+}
+
+.login-box button:active {
+  transform: scale(0.96);
+}
+
+/* DISABLED BUTTON */
+.login-box button:disabled {
+  background: #888;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* ERROR MESSAGE */
+#error-msg {
+  color: #ff4d4d;
+  font-size: 14px;
+  text-align: center;
+  margin-bottom: 10px;
+  display: none;
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  .login-wrapper {
+    flex-direction: column;
+  }
+
+  .logo-section,
+  .login-box {
+    width: 100%;
+  }
+
+  .logo-section {
+    padding: 30px 0;
+  }
+}
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

@@ -1,1 +1,33 @@
-!<!DOCTYPE html>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <title>College ERP Login</title>
+
+    <!-- CSS LINK -->
+   <link rel="stylesheet" href="css/style.css">
+  </head>
+  <body>
+    <div class="login-wrapper">
+      <!-- LEFT SIDE (LOGO) -->
+      <div class="logo-section">
+        <img src="images/College logo.jpeg" alt="College Logo" />
+        <h2>College ERP System</h2>
+      </div>
+
+      <!-- RIGHT SIDE (LOGIN FORM) -->
+      <div class="login-box">
+        <h3>Login</h3>
+
+        <input type="text" id="Email id" placeholder="Email id" />
+        <input type="password" id="password" placeholder="Password" />
+        <p id="error-msg"></p>
+
+        <button type="button" onclick="login()">Login</button>
+      </div>
+    </div>
+    <script src="js/script.js"></script>
+  </body>
+</html>
