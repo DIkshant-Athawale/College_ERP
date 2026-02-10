@@ -4,6 +4,7 @@ import express from 'express'
 import studentRouter from './routes/student.js'
 import loginRouter from './routes/auth.js'
 import adminRouter from './routes/admin.js'
+import teacherRouter from './routes/teacher.js'
 import cookieParser from "cookie-parser"
 
 
@@ -24,6 +25,7 @@ async function startServer()
     app.use("/login" , loginRouter)
     app.use("/student" , studentRouter)
     app.use("/admin" , adminRouter)
+    app.use("/teacher", teacherRouter)
     
 
     

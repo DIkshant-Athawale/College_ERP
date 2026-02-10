@@ -7,7 +7,7 @@ import authorize from '../middleware/authorize.js';
 const router = express.Router()
 
   // API route for students and authorize to student only bcuz of req.user 
-  router.get("/info",authenticate , authorize("student"),async (req, res) => {
+  router.get("/dashboard",authenticate , authorize("student"),async (req, res) => {
 
     console.log(req.user)
     const student_id = req.user.userId 
