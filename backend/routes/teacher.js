@@ -13,24 +13,38 @@ router.get("/dashboard",authenticate,authorize("faculty"),async (req,res)=>
 {
     try{
 
-        const teacher_id = req.user.user_id
+        const teacher_id = req.user.userId
 
         const [rows] = await pool.query(
-            `SELECT first_name,last_name,primary_phone,department,designation 
-            FROM teachers where teacher_id = ? `,
-            [teacher_id]
+          `SELECT 
+              t.first_name,
+              t.last_name,
+              t.primary_phone,
+              t.designation,
+              d.department_name
+           FROM teachers t
+           JOIN department d 
+             ON t.department_id = d.department_id
+           WHERE t.teacher_id = ?`,
+          [teacher_id]
         )
 
         if (rows.length === 0)
         {
-            return res.this.status(404).json({ message : "No teacher found"})
+            return res.status(404).json({ message : "No teacher found"})
         }
 
         //fetch courses assigned
         const [teaches] = await pool.query(
-            `SELECT course_name 
-            FROM courses  where teacher_id = ? `
-            [teacher_id]
+          `SELECT 
+              course_id,
+              course_code,
+              course_name,
+              year,
+              semester
+           FROM courses
+           WHERE teacher_id = ?`,
+          [teacher_id]
         )
 
         res.json({
@@ -117,14 +131,15 @@ router.get("/attendance/session/:session_id/students" ,authenticate,authorize("f
 
         const course_id = session[0].course_id;
 
-        //fetch enrolled students
+        //fetch enrolled students of current academic year enrolled students
         const [students] = await pool.execute(
-        `SELECT st.student_id, st.first_name, st.last_name
-         FROM enrollments e
-         JOIN students st ON e.student_id = st.student_id
-         WHERE e.course_id = ?`,
-        [course_id]
-        );
+          `SELECT st.student_id, st.first_name, st.last_name
+           FROM enrollments e
+           JOIN students st ON e.student_id = st.student_id
+           WHERE e.course_id = ?
+           AND e.academic_year = st.academic_year`,
+          [course_id]
+        )
 
         res.json({
             session_id,

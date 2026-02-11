@@ -20,11 +20,13 @@ router.post("/", async(req,res)=>
         return res.status(400).json({ message: "Email and password required"})
     }
 
+    console.log("hi")
     //first checks teacher db
     const [teacherRows] = await pool.execute(
-        `SELECT teacher_id , password ,role FROM teachers WHERE email = ?`,
+        `SELECT teacher_id , password , role FROM teachers WHERE email = ?`,
         [email]
     )
+
 
     //if email exists in teacher db
     if(teacherRows.length > 0)
@@ -57,9 +59,10 @@ router.post("/", async(req,res)=>
             process.env.REFRESH_SECRET,
             { expiresIn: "7d" }
           );
-          // Delete old refresh tokens on login
-          // await pool.execute('DELETE FROM refresh_tokens WHERE user_id = ? AND user_type = ?',
-          // [userId ,userType])
+
+          // Delete old refresh tokens on login of this user only
+          await pool.execute('DELETE FROM refresh_tokens WHERE user_id = ? AND user_type = ?',
+          [userId ,userType])
 
           await pool.execute(
             `INSERT INTO refresh_tokens (user_id, user_type,role, token, expires_at)
@@ -67,8 +70,7 @@ router.post("/", async(req,res)=>
             [userId, userType,teacher.role, refreshToken]
           );
         
-        //send the refreshtoken via secure path to cookie
-
+        //send the refresh token via secure path to cookie
         res.cookie("refreshToken" , refreshToken , {
           httpOnly : true ,
           secure : false ,
@@ -76,7 +78,7 @@ router.post("/", async(req,res)=>
           maxAge: 7 * 24 * 60 * 60 * 1000,
         })
 
-
+ 
         return res.json({ accessToken })
         
     }
@@ -103,6 +105,8 @@ router.post("/", async(req,res)=>
 
     const userId = student.student_id;
     const userType = "student";
+
+
     
     //if password exists and exists in db then generate JWT token for user
     const accessToken = jwt.sign(
@@ -122,7 +126,12 @@ router.post("/", async(req,res)=>
            },
             process.env.REFRESH_SECRET,
             { expiresIn: "7d" }
-      );
+      )
+
+    // Delete old refresh tokens on login of this user only
+    await pool.execute('DELETE FROM refresh_tokens WHERE user_id = ? AND user_type = ?',
+    [userId ,userType])
+     
 
     await pool.execute(
         `INSERT INTO refresh_tokens (user_id, user_type,role, token, expires_at)
@@ -133,7 +142,7 @@ router.post("/", async(req,res)=>
       //send refresh token in cookie via http
       res.cookie("refreshToken" , refreshToken , {
         httpOnly : true ,
-        secure : false ,
+        secure : false , //remember to true in HTTPS 
         sameSite : 'lax',
         maxAge: 7 * 24 * 60 * 60 * 1000,
       })
@@ -163,13 +172,21 @@ router.post("/refresh" ,async(req,res,) =>
         const decoded = jwt.verify(refreshToken, process.env.REFRESH_SECRET)
 
         const [rows] = await pool.execute(
-        "SELECT user_id, user_type, role FROM refresh_tokens WHERE token = ?",
+        "SELECT user_id, user_type, role FROM refresh_tokens WHERE token = ? AND expires_at > NOW()",
         [refreshToken]
         );
 
         if (rows.length === 0)
         return res.status(401).json({ message: "Invalid refresh token" })
+
         const session = rows[0];
+
+        if (
+          decoded.userId !== session.user_id ||
+          decoded.userType !== session.user_type
+        ) {
+          return res.status(401).json({ message: "Token mismatch" });
+        }
 
         const newAccessToken = jwt.sign(
           {
@@ -193,12 +210,11 @@ router.post("/refresh" ,async(req,res,) =>
 
 
 //logout
-
 router.post("/logout", async (req, res) => {
   const  refreshToken  = req.cookies.refreshToken;
 
   if (!refreshToken) {
-    return res.status(400).json({ message: "Refresh token required" });
+    return res.status(400).json({ message: "Already logged out or require token" });
   }
 
   await pool.execute(
