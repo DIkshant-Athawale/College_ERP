@@ -1,7 +1,4 @@
-body {
-  background: linear-gradient(135deg, #050505, #3A0CA3);
-}
-
+/* RESET */
 * {
   margin: 0;
   padding: 0;
@@ -18,17 +15,6 @@ body {
 }
 
 /* MAIN CONTAINER */
-/* .login-wrapper {
-  width: 90%;
-  max-width: 1000px;
-  min-height: 450px;
-  background: linear-gradient(145deg, #3A0CA3, #050505);
-  border-radius: 20px;
-  display: flex;
-  overflow: hidden;
-  box-shadow: 0 15px 40px rgba(0,0,0,0.4);
-} */
-
 .login-wrapper {
   width: 90%;
   max-width: 1000px;
@@ -39,17 +25,13 @@ body {
   overflow: hidden;
   box-shadow: 0 15px 40px rgba(0,0,0,0.4);
   animation: fadeUp 0.8s ease;
-
-
-  /* ✅ ADD THESE 2 LINES */
   transition: transform 0.4s ease, box-shadow 0.4s ease;
 }
-/* ✅ CARD HOVER ANIMATION */
+
 .login-wrapper:hover {
   transform: translateY(-8px) scale(1.02);
   box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6);
 }
-
 
 /* LEFT LOGO SECTION */
 .logo-section {
@@ -82,29 +64,65 @@ body {
   margin-bottom: 20px;
 }
 
-/* LABEL */
-.login-box label {
-  color: #ffffff;
-  font-size: 14px;
-  margin-bottom: 6px;
-  display: block;
+/* INPUT WITH ICON */
+.input-box {
+  position: relative;
+  width: 100%;
+  margin-bottom: 16px;
 }
 
-/* INPUTS & SELECT */
-.login-box input,
-.login-box select {
-  color: #333;
-  margin-bottom: 15px;
-  padding: 12px;
-  border-radius: 8px;
+.input-box input {
+  width: 100%;
+  height: 42px;
+  padding-left: 44px;
+  border-radius: 10px;
   border: none;
   outline: none;
+  font-size: 14px;
+  color: #333;
 }
 
-/* FOCUS EFFECT */
-.login-box input:focus,
-.login-box select:focus {
+.input-box input:focus {
   box-shadow: 0 0 8px rgba(0, 194, 255, 0.6);
+}
+
+.icon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 16px;
+  color: #444;
+  pointer-events: none;
+}
+
+/* CAPTCHA */
+.captcha-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.captcha-text {
+  min-width: 70px;
+  height: 42px;
+  background: #e5e7eb;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+}
+
+.captcha-box input {
+  flex: 1;
+  height: 42px;
+  border-radius: 10px;
+  border: none;
+  outline: none;
+  padding: 0 14px;
+  font-size: 14px;
 }
 
 /* LOGIN BUTTON */
@@ -116,57 +134,9 @@ body {
   color: white;
   font-weight: bold;
   cursor: pointer;
+  margin-bottom: 12px;
   transition: all 0.3s ease;
-box-shadow: 0 10px 18px rgba(59, 130, 246, 0.45);
-}
-.login-box button:active {
-  transform: scale(0.96);
-}
- 
-
-/* ✅ THIS IS THE KEY PART */
-/* .login-box button:hover { 
-  background-color: #ffffff;  /* FULL WHITE */
-  /* color: #560bad;
-} */ */
-
-
-
-button:before {
-  content: "";
-  position: absolute;
-  z-index: -1;
-  background: var(--color);
-  height: 150px;
-  width: 200px;
-  border-radius: 50%;
-}
-
-button:hover {
-  color: #fff;
-}
-
-button:before {
-  top: 100%;
-  left: 100%;
-  transition: all 0.7s;
-}
-
-button:hover:before {
-  top: -30px;
-  left: -30px;
-}
-
-button:active:before {
-  background: #3a0ca3;
-  transition: background 0s;
-}
-
-
-
-button:active:before {
-  background: #3a0ca3;
-  transition: background 0s;
+  box-shadow: 0 10px 18px rgba(59, 130, 246, 0.45);
 }
 
 .login-box button:hover {
@@ -178,11 +148,33 @@ button:active:before {
   transform: scale(0.96);
 }
 
-/* DISABLED BUTTON */
-.login-box button:disabled {
-  background: #888;
-  cursor: not-allowed;
-  box-shadow: none;
+/* OPTIONS (REMEMBER ME + FORGOT) */
+.options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  color: white;
+}
+
+.options label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.options input[type="checkbox"] {
+  margin: 0;
+}
+
+.options .forgot {
+  color: #f3f4f7;
+  text-decoration: none;
+}
+
+.options .forgot:hover {
+  text-decoration: underline;
 }
 
 /* ERROR MESSAGE */
@@ -209,6 +201,8 @@ button:active:before {
     padding: 30px 0;
   }
 }
+
+/* ANIMATION */
 @keyframes fadeUp {
   from {
     opacity: 0;

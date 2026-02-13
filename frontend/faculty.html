@@ -1,19 +1,180 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Faculty Dashboard</title>
-  <link rel="stylesheet" href="css/style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Faculty Dashboard</title>
+
+<link rel="stylesheet" href="css/faculty.css">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
 
-  <main class="dashboard">
-    <h2>Faculty Dashboard</h2>
-    <div class="card">My Classes</div>
-    <div class="card">Upload Marks</div>
-    <div class="card">Attendance</div>
-  </main>
+<div class="container">
 
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+
+        <div class="profile">
+            <img src="images/College logo.jpeg" alt="Faculty">
+            <h3 id="facultyName">Faculty Name</h3>
+            <p>EMP2024001</p>
+            <p>Computer Science Department</p>
+        </div>
+
+        <!-- Personal Information Box -->
+        <div class="personal-box">
+            <h4>Personal Information</h4>
+            <p><strong>Date of Birth:</strong> 01 Jan 1980</p>
+            <p><strong>Contact No:</strong> +91 9876543210</p>
+            <p><strong>Email:</strong> faculty@college.edu</p>
+            <p><strong>Address:</strong> Hyderabad, Telangana</p>
+        </div>
+
+        <!-- Logout -->
+        <button class="logout" onclick="logout()">Logout</button>
+
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="main-content">
+
+        <!-- Subjects Teaching Card -->
+        <div class="card">
+            <h2>Subjects Teaching</h2>
+            <ul>
+                <li>Data Structures</li>
+                <li>Algorithm Design</li>
+                <li>Computer Networks</li>
+            </ul>
+        </div>
+
+        <!-- Today's Lecture Schedule Card -->
+        <div class="card">
+            <h2>Today's Lecture Schedule</h2>
+            <table>
+                <tr>
+                    <th>Time</th>
+                    <th>Subject</th>
+                    <th>Room</th>
+                </tr>
+                <tr>
+                    <td>9:00 AM - 10:00 AM</td>
+                    <td>Data Structures</td>
+                    <td>301</td>
+                </tr>
+                <tr>
+                    <td>10:15 AM - 11:15 AM</td>
+                    <td>Algorithm Design</td>
+                    <td>302</td>
+                </tr>
+                <tr>
+                    <td>11:30 AM - 12:30 PM</td>
+                    <td>Computer Networks</td>
+                    <td>Lab 102</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Attendance Card -->
+        <div class="card">
+            <h2>Student Attendance</h2>
+            <table>
+                <tr>
+                    <th>Roll No</th>
+                    <th>Name</th>
+                    <th>Present / Absent</th>
+                </tr>
+                <tr>
+                    <td>CS2024001</td>
+                    <td>Student A</td>
+                    <td>Present</td>
+                </tr>
+                <tr>
+                    <td>CS2024002</td>
+                    <td>Student B</td>
+                    <td>Absent</td>
+                </tr>
+                <tr>
+                    <td>CS2024003</td>
+                    <td>Student C</td>
+                    <td>Present</td>
+                </tr>
+                <tr>
+                    <td>CS2024004</td>
+                    <td>Student D</td>
+                    <td>Present</td>
+                </tr>
+            </table>
+        </div>
+
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="right-panel">
+
+        <!-- Announcements Card -->
+        <div class="card">
+            <h3>Announcements</h3>
+
+            <div class="accordion-item">
+                <div class="accordion-header" onclick="toggleAccordion(0)">Academic</div>
+                <div class="accordion-content">
+                    Department meeting at 2 PM.
+                </div>
+            </div>
+
+            <div class="accordion-item">
+                <div class="accordion-header" onclick="toggleAccordion(1)">Co-curricular</div>
+                <div class="accordion-content">
+                    Guest lecture registrations open.
+                </div>
+            </div>
+
+            <div class="accordion-item">
+                <div class="accordion-header" onclick="toggleAccordion(2)">Examination</div>
+                <div class="accordion-content">
+                    Mid-semester marks submitted.<br>
+                </div>
+            </div>
+        </div>
+
+        <!-- Internal Marks Card -->
+        <div class="card">
+            <h3>Internal Marks</h3>
+            <table>
+                <tr>
+                    <th>Roll No</th>
+                    <th>Name</th>
+                    <th>Marks</th>
+                </tr>
+                <tr>
+                    <td>CS2024001</td>
+                    <td>Student A</td>
+                    <td>85</td>
+                </tr>
+                <tr>
+                    <td>CS2024002</td>
+                    <td>Student B</td>
+                    <td>78</td>
+                </tr>
+                <tr>
+                    <td>CS2024003</td>
+                    <td>Student C</td>
+                    <td>92</td>
+                </tr>
+                <tr>
+                    <td>CS2024004</td>
+                    <td>Student D</td>
+                    <td>88</td>
+                </tr>
+            </table>
+        </div>
+
+    </div>
+
+</div>
+
+<script src="js/faculty.js"></script>
 </body>
 </html>

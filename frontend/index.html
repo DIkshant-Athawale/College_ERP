@@ -3,12 +3,18 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    
     <title>College ERP Login</title>
 
     <!-- CSS LINK -->
-   <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/style.css" />
+
+    <!-- Font Awesome -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
   </head>
+
   <body>
     <div class="login-wrapper">
       <!-- LEFT SIDE (LOGO) -->
@@ -21,13 +27,45 @@
       <div class="login-box">
         <h3>Login</h3>
 
-        <input type="text" id="Email id" placeholder="Email id" />
-        <input type="password" id="password" placeholder="Password" />
+        <!-- Email ID -->
+        <div class="input-box">
+          <i class="icon fa fa-envelope"></i>
+          <input type="email" placeholder="Email ID" required />
+        </div>
+
+        <!-- Password -->
+        <div class="input-box">
+          <i class="icon fa fa-lock"></i>
+          <input type="password" placeholder="Password" />
+        </div>
+
+        <!-- Captcha -->
+        <div class="captcha-box">
+          <span class="captcha-text">8 + 4 =</span>
+          <input type="text" placeholder="Answer" />
+        </div>
+        <!-- Existing inputs: Email, Password, Captcha -->
+
+        
+        <!-- Error message -->
         <p id="error-msg"></p>
 
+        <p id="error-msg"></p>
+
+        <!-- Login Button -->
         <button type="button" onclick="login()">Login</button>
+
+        <!-- Remember Me + Forgot Password -->
+        <div class="options">
+          <label>
+            <input type="checkbox" />
+            Remember Me
+          </label>
+          <a href="#" class="forgot">Forgot Password?</a>
+        </div>
       </div>
     </div>
+
     <script src="js/script.js"></script>
   </body>
 </html>
