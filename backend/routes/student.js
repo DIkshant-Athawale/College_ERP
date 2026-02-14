@@ -16,7 +16,7 @@ const router = express.Router()
 
       //Profile Info
       const [profileRows] = await pool.execute(
-        `SELECT student_id, first_name, last_name, email, year, semester
+        `SELECT student_id, first_name, last_name, email, year, semester, department_id, academic_year
          FROM students
          WHERE student_id = ?`,
         [student_id]
@@ -42,17 +42,30 @@ const router = express.Router()
         `SELECT 
             c.course_name,
             COUNT(ar.record_id) AS total_classes,
-            SUM(ar.status = 'present') AS present_classes
+            COALESCE(SUM(ar.status = 'present'), 0) AS present_classes
          FROM enrollments e
          JOIN courses c ON e.course_id = c.course_id
-         LEFT JOIN attendance_sessions s ON c.course_id = s.course_id
+         LEFT JOIN attendance_sessions s 
+             ON c.course_id = s.course_id
          LEFT JOIN attendance_records ar 
-           ON ar.session_id = s.session_id 
-           AND ar.student_id = ?
+             ON ar.session_id = s.session_id 
+             AND ar.student_id = ?
          WHERE e.student_id = ?
          GROUP BY c.course_id`,
         [student_id, student_id]
-      );
+      )
+      
+
+      //fee record
+      const [feeRecord] = await pool.execute(
+        `SELECT 
+        total_fee,
+        paid_amount,
+        (total_fee - paid_amount) AS remaining_fee
+        FROM student_fees
+        WHERE student_id = ?`,
+        [student_id]
+      )
 
       // Overall Attendance
       const [overall] = await pool.execute(
@@ -77,12 +90,36 @@ const router = express.Router()
             : 0
       };
 
+      const { department_id, year, semester,  } = profile;
+
+      //get timetable
+      const [timetable] = await pool.execute(
+        `SELECT 
+            t.day,
+            ts.start_time,
+            ts.end_time,
+            c.course_name,
+            CONCAT(tr.first_name,' ',tr.last_name) AS teacher_name
+         FROM timetable t
+         JOIN time_slots ts ON t.slot_id = ts.slot_id
+         JOIN courses c ON t.course_id = c.course_id
+         JOIN teachers tr ON t.teacher_id = tr.teacher_id
+         WHERE t.department_id = ?
+         AND t.year = ?
+         AND t.semester = ?
+         ORDER BY FIELD(t.day,'Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'),
+                  ts.start_time`,
+        [department_id, year, semester]
+      )
       
       res.json({
         profile,
         subjects,
         attendance_by_subject: attendanceData,
         overall_attendance: overallSummary,
+        feeRecord,
+        timetablerows : timetable
+
       });
 
     } catch (error) {

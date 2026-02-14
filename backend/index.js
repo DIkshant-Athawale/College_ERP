@@ -6,6 +6,7 @@ import loginRouter from './routes/auth.js'
 import adminRouter from './routes/admin.js'
 import teacherRouter from './routes/teacher.js'
 import cookieParser from "cookie-parser"
+import cors from "cors"
 
 
 async function startServer()
@@ -14,6 +15,11 @@ async function startServer()
     const app = express()
     app.use(express.json());
     app.use(cookieParser());
+    app.use(cors({
+        origin: true,
+        credentials: true
+      }));
+      
 
     app.get('/',(req,res)=>{
         res.send("Server is ready")

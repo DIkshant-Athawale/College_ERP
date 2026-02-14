@@ -20,7 +20,6 @@ router.post("/", async(req,res)=>
         return res.status(400).json({ message: "Email and password required"})
     }
 
-    console.log("hi")
     //first checks teacher db
     const [teacherRows] = await pool.execute(
         `SELECT teacher_id , password , role FROM teachers WHERE email = ?`,
@@ -79,7 +78,12 @@ router.post("/", async(req,res)=>
         })
 
  
-        return res.json({ accessToken })
+        return res.json({
+          accessToken,
+          role: teacher.role,
+          userType
+        })
+        
         
     }
 
@@ -147,8 +151,12 @@ router.post("/", async(req,res)=>
         maxAge: 7 * 24 * 60 * 60 * 1000,
       })
 
-    return res.json({ accessToken})
-
+    return res.json({
+      accessToken,
+      role: "student",
+      userType
+    })
+    
     }
 
     catch (error) {
