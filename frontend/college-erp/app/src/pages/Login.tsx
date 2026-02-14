@@ -50,14 +50,27 @@ export const Login: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // Use mock API for demonstration
-      const response = await mockAuthApi.login({ email, password });
+      
+      //API
+
+        const response = await fetch("http://localhost:3000/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include", // VERY IMPORTANT for cookies
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      localStorage.setItem("accessToken", data.accessToken);
 
       // Store auth data
-      setAuthData(response);
+      setAuthData(data);
 
       // Navigate based on role
-      switch (response.role) {
+      switch (data.role) {
         case 'student':
           navigate('/student/dashboard', { replace: true });
           break;

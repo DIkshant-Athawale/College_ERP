@@ -40,8 +40,23 @@ export const StudentDashboard: React.FC = () => {
     try {
       setIsLoading(true);
       setError(null);
-      const response = await mockStudentApi.getDashboard();
-      setData(response);
+      const token = localStorage.getItem("accessToken");
+
+      const response = await fetch("http://localhost:3000/student/dashboard", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        credentials: "include"
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch dashboard");
+      }
+      const result: StudentDashboardData = await response.json();
+
+      setData(result);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load dashboard data');
     } finally {
