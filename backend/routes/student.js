@@ -7,21 +7,125 @@ import authorize from '../middleware/authorize.js';
 const router = express.Router()
 
   // API route for students and authorize to student only bcuz of req.user 
-  router.get("/info",authenticate , authorize("student"),async (req, res) => {
+  router.get("/dashboard",authenticate , authorize("student"),async (req, res) => {
 
     console.log(req.user)
     const student_id = req.user.userId 
 
-    const [rows] = await pool.execute(
-      "SELECT student_id, first_name, last_name, email FROM students WHERE student_id = ?", //"?" protection against sql injection
-      [student_id]
-    );
+    try {
 
-    if (rows.length === 0) {
-      return res.status(404).json({ message: "Student not found" });
+      //Profile Info
+      const [profileRows] = await pool.execute(
+        `SELECT student_id, first_name, last_name, email, year, semester, department_id, academic_year
+         FROM students
+         WHERE student_id = ?`,
+        [student_id]
+      );
+
+      if (profileRows.length === 0) {
+        return res.status(404).json({ message: "Student not found" });
+      }
+
+      const profile = profileRows[0];
+
+      //Enrolled Subjects
+      const [subjects] = await pool.execute(
+        `SELECT c.course_id, c.course_name, c.course_code
+         FROM enrollments e
+         JOIN courses c ON e.course_id = c.course_id
+         WHERE e.student_id = ?`,
+        [student_id]
+      );
+
+      //Subject-wise Attendance
+      const [attendanceData] = await pool.execute(
+        `SELECT 
+            c.course_name,
+            COUNT(ar.record_id) AS total_classes,
+            COALESCE(SUM(ar.status = 'present'), 0) AS present_classes
+         FROM enrollments e
+         JOIN courses c ON e.course_id = c.course_id
+         LEFT JOIN attendance_sessions s 
+             ON c.course_id = s.course_id
+         LEFT JOIN attendance_records ar 
+             ON ar.session_id = s.session_id 
+             AND ar.student_id = ?
+         WHERE e.student_id = ?
+         GROUP BY c.course_id`,
+        [student_id, student_id]
+      )
+      
+
+      //fee record
+      const [feeRecord] = await pool.execute(
+        `SELECT 
+        total_fee,
+        paid_amount,
+        (total_fee - paid_amount) AS remaining_fee
+        FROM student_fees
+        WHERE student_id = ?`,
+        [student_id]
+      )
+
+      // Overall Attendance
+      const [overall] = await pool.execute(
+        `SELECT 
+            COUNT(ar.record_id) AS total_classes,
+            SUM(ar.status = 'present') AS present_classes
+         FROM attendance_records ar
+         WHERE ar.student_id = ?`,
+        [student_id]
+      );
+
+      const overallSummary = {
+        total_classes: overall[0].total_classes || 0,
+        present_classes: overall[0].present_classes || 0,
+        percentage:
+          overall[0].total_classes > 0
+            ? (
+                (overall[0].present_classes /
+                  overall[0].total_classes) *
+                100
+              ).toFixed(2)
+            : 0
+      };
+
+      const { department_id, semester,  } = profile;
+
+      //get timetable by sem and department
+      const [timetable] = await pool.execute(
+        `SELECT 
+            t.day,
+            ts.start_time,
+            ts.end_time,
+            c.course_name,
+            CONCAT(tr.first_name, ' ', tr.last_name) AS teacher_name
+         FROM timetable t
+         JOIN time_slots ts ON t.slot_id = ts.slot_id
+         JOIN courses c ON t.course_id = c.course_id
+         JOIN teachers tr ON c.teacher_id = tr.teacher_id
+         WHERE t.department_id = ?
+         AND t.semester = ?
+         ORDER BY FIELD(t.day,'Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'),
+                  ts.start_time`,
+        [department_id, semester]
+      );
+      
+      
+      res.json({
+        profile,
+        subjects,
+        attendance_by_subject: attendanceData,
+        overall_attendance: overallSummary,
+        feeRecord,
+        timetablerows : timetable
+
+      });
+
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Internal server error" });
     }
-    
-    res.json(rows[0]);
     
   }); 
 
