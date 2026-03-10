@@ -13,6 +13,8 @@ import {
   FeeCard,
   TimetableTable,
   EssentialLinksSection,
+  StudentAssignmentsCard,
+  StudentTestsCard,
 } from '@/components';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -63,14 +65,14 @@ const StudentDashboard: React.FC = () => {
 
   const userName = `${data.profile.first_name} ${data.profile.last_name}`;
 
- 
+
   return (
     <div className="min-h-screen" style={{ background: theme.background }}>
       <Navbar userName={userName} userRole="Student" />
-      
+
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Page Header with Welcome */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
@@ -78,7 +80,7 @@ const StudentDashboard: React.FC = () => {
         >
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div>
-              <h1 
+              <h1
                 className="text-3xl lg:text-4xl font-bold mb-2"
                 style={{ color: theme.text }}
               >
@@ -88,24 +90,24 @@ const StudentDashboard: React.FC = () => {
                 Here&apos;s your academic overview for today
               </p>
             </div>
-            <div 
+            <div
               className="flex items-center gap-2 px-4 py-2 rounded-xl"
               style={{ background: `${theme.primary}10` }}
             >
-             
+
               <span className="text-sm font-medium" style={{ color: theme.text }}>
-                {new Date().toLocaleDateString('en-US', { 
-                  weekday: 'long', 
-                  year: 'numeric', 
-                  month: 'long', 
-                  day: 'numeric' 
+                {new Date().toLocaleDateString('en-US', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
                 })}
               </span>
             </div>
           </div>
         </motion.div>
 
-  
+
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 xl:grid-cols-10 gap-8 items-start">
@@ -113,30 +115,30 @@ const StudentDashboard: React.FC = () => {
           <div id="student-profile" className="xl:col-span-3">
             <div className="sticky top-24 space-y-6">
               <StudentProfileCard profile={data.profile} />
-              
+
               {/* Achievement Card */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.6 }}
               >
-                <Card 
+                <Card
                   className="border-0 shadow-lg overflow-hidden"
                   style={{ background: theme.surface }}
                 >
                   <CardContent className="p-6">
                     <div className="flex items-center gap-4">
-                      <div 
+                      <div
                         className="w-14 h-14 rounded-xl flex items-center justify-center"
                         style={{ background: `${theme.success}15` }}
                       >
-     
+
                       </div>
                       <div>
                         <p className="text-sm" style={{ color: theme.textMuted }}>
                           Current Status
                         </p>
-                        <p 
+                        <p
                           className="text-lg font-bold"
                           style={{ color: theme.success }}
                         >
@@ -153,10 +155,16 @@ const StudentDashboard: React.FC = () => {
           {/* Right Content Area */}
           <div className="xl:col-span-7 space-y-6 xl:max-h-[calc(100vh-6rem)] xl:overflow-y-auto xl:pr-2">
             <SubjectsCard subjects={data.subjects} />
-            <AttendanceBarSection 
+            <AttendanceBarSection
               attendanceBySubject={data.attendance_by_subject}
               overallAttendance={data.overall_attendance}
             />
+            {data.assignments && data.assignments.length > 0 && (
+              <StudentAssignmentsCard assignments={data.assignments} />
+            )}
+            {data.tests && data.tests.length > 0 && (
+              <StudentTestsCard tests={data.tests} />
+            )}
             <Card
               id="student-notifications"
               className="border-0 shadow-lg overflow-hidden"

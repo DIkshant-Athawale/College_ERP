@@ -9,10 +9,8 @@ const router = express.Router();
 
 
 //course progress tracking
-//create assignment and deadlines
-//mark the assignment submission
 //notice
-//create tests and send marks and their absent
+
 
 
 
@@ -31,10 +29,13 @@ router.get(
       // 1️⃣ Teacher profile
       const [rows] = await pool.query(
         `SELECT 
+            t.teacher_id,
             t.first_name,
             t.last_name,
+            t.email,
             t.primary_phone,
             t.designation,
+            t.department_id,
             d.department_name
          FROM teachers t
          JOIN department d 
@@ -557,5 +558,660 @@ router.get(
 
 
 
+// ========================
+// ASSIGNMENT MANAGEMENT
+// ========================
 
-export default router 
+// 1. Create an assignment for a course
+router.post(
+  "/assignments",
+  authenticate,
+  authorize("faculty", "admin"),
+  async (req, res) => {
+
+    const { course_id, title, deadline } = req.body;
+    const teacher_id = req.user.userId;
+
+    if (!course_id || !title) {
+      return res.status(400).json({ message: "course_id and title are required" });
+    }
+
+    try {
+
+      // Verify teacher owns this course
+      const [course] = await pool.execute(
+        `SELECT course_id FROM courses WHERE course_id = ? AND teacher_id = ?`,
+        [course_id, teacher_id]
+      );
+
+      if (course.length === 0) {
+        return res.status(403).json({ message: "Not authorized for this course" });
+      }
+
+      const [result] = await pool.execute(
+        `INSERT INTO assignments (course_id, title, deadline, created_by)
+         VALUES (?, ?, ?, ?)`,
+        [course_id, title.trim(), deadline || null, teacher_id]
+      );
+
+      res.status(201).json({
+        message: "Assignment created",
+        assignment_id: result.insertId
+      });
+
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  }
+);
+
+// 2. List all assignments for a course
+router.get(
+  "/assignments/:course_id",
+  authenticate,
+  authorize("faculty", "admin"),
+  async (req, res) => {
+
+    const { course_id } = req.params;
+    const teacher_id = req.user.userId;
+
+    try {
+
+      // Verify teacher owns this course
+      const [course] = await pool.execute(
+        `SELECT course_id FROM courses WHERE course_id = ? AND teacher_id = ?`,
+        [course_id, teacher_id]
+      );
+
+      if (course.length === 0) {
+        return res.status(403).json({ message: "Not authorized for this course" });
+      }
+
+      const [assignments] = await pool.execute(
+        `SELECT 
+            a.assignment_id,
+            a.title,
+            a.deadline,
+            a.created_at,
+            COUNT(asub.submission_id) AS total_submissions
+         FROM assignments a
+         LEFT JOIN assignment_submissions asub 
+            ON a.assignment_id = asub.assignment_id
+            AND asub.submitted = TRUE
+         WHERE a.course_id = ?
+         GROUP BY a.assignment_id
+         ORDER BY a.created_at ASC`,
+        [course_id]
+      );
+
+      res.json({ course_id: Number(course_id), assignments });
+
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  }
+);
+
+// 3. Delete an assignment
+router.delete(
+  "/assignments/:assignment_id",
+  authenticate,
+  authorize("faculty", "admin"),
+  async (req, res) => {
+
+    const { assignment_id } = req.params;
+    const teacher_id = req.user.userId;
+
+    try {
+
+      // Verify teacher owns the assignment's course
+      const [assignment] = await pool.execute(
+        `SELECT a.assignment_id
+         FROM assignments a
+         JOIN courses c ON a.course_id = c.course_id
+         WHERE a.assignment_id = ? AND c.teacher_id = ?`,
+        [assignment_id, teacher_id]
+      );
+
+      if (assignment.length === 0) {
+        return res.status(403).json({ message: "Not authorized or assignment not found" });
+      }
+
+      // CASCADE will remove related submissions
+      await pool.execute(
+        `DELETE FROM assignments WHERE assignment_id = ?`,
+        [assignment_id]
+      );
+
+      res.json({ message: "Assignment deleted successfully" });
+
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  }
+);
+
+// 4. Batch mark submissions for an assignment
+router.post(
+  "/assignments/:assignment_id/submissions",
+  authenticate,
+  authorize("faculty", "admin"),
+  async (req, res) => {
+
+    const { assignment_id } = req.params;
+    const { submissions } = req.body;
+    const teacher_id = req.user.userId;
+
+    if (!Array.isArray(submissions) || submissions.length === 0) {
+      return res.status(400).json({ message: "submissions array is required" });
+    }
+
+    const conn = await pool.getConnection();
+
+    try {
+      await conn.beginTransaction();
+
+      // Verify teacher owns the assignment's course
+      const [assignment] = await conn.execute(
+        `SELECT a.assignment_id, a.course_id
+         FROM assignments a
+         JOIN courses c ON a.course_id = c.course_id
+         WHERE a.assignment_id = ? AND c.teacher_id = ?`,
+        [assignment_id, teacher_id]
+      );
+
+      if (assignment.length === 0) {
+        await conn.rollback();
+        return res.status(403).json({ message: "Not authorized or assignment not found" });
+      }
+
+      for (const sub of submissions) {
+        const { student_id, submitted } = sub;
+
+        if (!student_id || submitted === undefined) continue;
+
+        const submittedAt = submitted ? new Date() : null;
+
+        // INSERT or UPDATE if already exists
+        await conn.execute(
+          `INSERT INTO assignment_submissions (assignment_id, student_id, submitted, submitted_at)
+           VALUES (?, ?, ?, ?)
+           ON DUPLICATE KEY UPDATE submitted = VALUES(submitted), submitted_at = VALUES(submitted_at)`,
+          [assignment_id, student_id, submitted ? 1 : 0, submittedAt]
+        );
+      }
+
+      await conn.commit();
+
+      res.json({ message: "Submissions updated successfully" });
+
+    } catch (error) {
+      await conn.rollback();
+      console.error(error);
+      res.status(500).json({ message: "Internal server error" });
+    } finally {
+      conn.release();
+    }
+  }
+);
+
+// 5. Get submission status for all enrolled students of an assignment
+router.get(
+  "/assignments/:assignment_id/submissions",
+  authenticate,
+  authorize("faculty", "admin"),
+  async (req, res) => {
+
+    const { assignment_id } = req.params;
+    const teacher_id = req.user.userId;
+
+    try {
+
+      // Verify teacher owns the assignment's course + get assignment info
+      const [assignmentRows] = await pool.execute(
+        `SELECT a.assignment_id, a.title, a.deadline, a.course_id
+         FROM assignments a
+         JOIN courses c ON a.course_id = c.course_id
+         WHERE a.assignment_id = ? AND c.teacher_id = ?`,
+        [assignment_id, teacher_id]
+      );
+
+      if (assignmentRows.length === 0) {
+        return res.status(403).json({ message: "Not authorized or assignment not found" });
+      }
+
+      const assignmentInfo = assignmentRows[0];
+
+      // Get all enrolled active students with their submission status
+      const [students] = await pool.execute(
+        `SELECT 
+            st.student_id,
+            st.first_name,
+            st.last_name,
+            COALESCE(asub.submitted, FALSE) AS submitted,
+            asub.submitted_at
+         FROM enrollments e
+         JOIN students st ON e.student_id = st.student_id
+         LEFT JOIN assignment_submissions asub 
+            ON asub.assignment_id = ?
+            AND asub.student_id = st.student_id
+         WHERE e.course_id = ?
+           AND st.status = 'active'
+         ORDER BY st.first_name, st.last_name`,
+        [assignment_id, assignmentInfo.course_id]
+      );
+
+      res.json({
+        assignment_id: assignmentInfo.assignment_id,
+        title: assignmentInfo.title,
+        deadline: assignmentInfo.deadline,
+        students
+      });
+
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  }
+);
+
+
+// ========================
+// UNIT TEST MANAGEMENT
+// ========================
+
+// 1. Create a unit test for a course
+router.post(
+  "/tests",
+  authenticate,
+  authorize("faculty", "admin"),
+  async (req, res) => {
+
+    const { course_id, title, test_date, max_marks } = req.body;
+    const teacher_id = req.user.userId;
+
+    if (!course_id || !title || max_marks === undefined) {
+      return res.status(400).json({ message: "course_id, title, and max_marks are required" });
+    }
+
+    try {
+      // Verify teacher owns this course
+      const [course] = await pool.execute(
+        `SELECT course_id FROM courses WHERE course_id = ? AND teacher_id = ?`,
+        [course_id, teacher_id]
+      );
+
+      if (course.length === 0) {
+        return res.status(403).json({ message: "Not authorized for this course" });
+      }
+
+      const [result] = await pool.execute(
+        `INSERT INTO unit_tests (course_id, title, test_date, max_marks, created_by)
+         VALUES (?, ?, ?, ?, ?)`,
+        [course_id, title.trim(), test_date || null, max_marks, teacher_id]
+      );
+
+      res.status(201).json({
+        message: "Test created successfully",
+        test_id: result.insertId
+      });
+
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  }
+);
+
+// 2. List all tests for a course
+router.get(
+  "/tests/:course_id",
+  authenticate,
+  authorize("faculty", "admin"),
+  async (req, res) => {
+
+    const { course_id } = req.params;
+    const teacher_id = req.user.userId;
+
+    try {
+      // Verify teacher owns this course
+      const [course] = await pool.execute(
+        `SELECT course_id FROM courses WHERE course_id = ? AND teacher_id = ?`,
+        [course_id, teacher_id]
+      );
+
+      if (course.length === 0) {
+        return res.status(403).json({ message: "Not authorized for this course" });
+      }
+
+      const [tests] = await pool.execute(
+        `SELECT 
+            t.test_id,
+            t.title,
+            t.test_date,
+            t.max_marks,
+            t.created_at,
+            COUNT(ts.score_id) AS total_scored
+         FROM unit_tests t
+         LEFT JOIN test_scores ts 
+            ON t.test_id = ts.test_id
+         WHERE t.course_id = ?
+         GROUP BY t.test_id
+         ORDER BY t.created_at ASC`,
+        [course_id]
+      );
+
+      res.json({ course_id: Number(course_id), tests });
+
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  }
+);
+
+// 3. Delete a test
+router.delete(
+  "/tests/:test_id",
+  authenticate,
+  authorize("faculty", "admin"),
+  async (req, res) => {
+
+    const { test_id } = req.params;
+    const teacher_id = req.user.userId;
+
+    try {
+      // Verify teacher owns the test's course
+      const [test] = await pool.execute(
+        `SELECT t.test_id
+         FROM unit_tests t
+         JOIN courses c ON t.course_id = c.course_id
+         WHERE t.test_id = ? AND c.teacher_id = ?`,
+        [test_id, teacher_id]
+      );
+
+      if (test.length === 0) {
+        return res.status(403).json({ message: "Not authorized or test not found" });
+      }
+
+      // CASCADE will remove related test_scores
+      await pool.execute(
+        `DELETE FROM unit_tests WHERE test_id = ?`,
+        [test_id]
+      );
+
+      res.json({ message: "Test deleted successfully" });
+
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  }
+);
+
+// 4. Batch update test scores
+router.post(
+  "/tests/:test_id/scores",
+  authenticate,
+  authorize("faculty", "admin"),
+  async (req, res) => {
+
+    const { test_id } = req.params;
+    const { scores } = req.body;
+    const teacher_id = req.user.userId;
+
+    if (!Array.isArray(scores) || scores.length === 0) {
+      return res.status(400).json({ message: "scores array is required" });
+    }
+
+    const conn = await pool.getConnection();
+
+    try {
+      await conn.beginTransaction();
+
+      // Verify teacher owns the test's course
+      const [test] = await conn.execute(
+        `SELECT t.test_id, t.course_id, t.max_marks
+         FROM unit_tests t
+         JOIN courses c ON t.course_id = c.course_id
+         WHERE t.test_id = ? AND c.teacher_id = ?`,
+        [test_id, teacher_id]
+      );
+
+      if (test.length === 0) {
+        await conn.rollback();
+        return res.status(403).json({ message: "Not authorized or test not found" });
+      }
+
+      for (const sc of scores) {
+        const { student_id, marks_obtained, is_absent } = sc;
+
+        if (!student_id) continue;
+
+        const absent = !!is_absent;
+        const marks = absent ? null : (marks_obtained !== undefined ? marks_obtained : null);
+
+        // INSERT or UPDATE if already exists
+        await conn.execute(
+          `INSERT INTO test_scores (test_id, student_id, marks_obtained, is_absent)
+           VALUES (?, ?, ?, ?)
+           ON DUPLICATE KEY UPDATE marks_obtained = VALUES(marks_obtained), is_absent = VALUES(is_absent)`,
+          [test_id, student_id, marks, absent ? 1 : 0]
+        );
+      }
+
+      await conn.commit();
+      res.json({ message: "Scores updated successfully" });
+
+    } catch (error) {
+      await conn.rollback();
+      console.error(error);
+      res.status(500).json({ message: "Internal server error" });
+    } finally {
+      conn.release();
+    }
+  }
+);
+
+// 5. Get scores for all enrolled students
+router.get(
+  "/tests/:test_id/scores",
+  authenticate,
+  authorize("faculty", "admin"),
+  async (req, res) => {
+
+    const { test_id } = req.params;
+    const teacher_id = req.user.userId;
+
+    try {
+      // Verify teacher owns the test's course + get test info
+      const [testRows] = await pool.execute(
+        `SELECT t.test_id, t.title, t.test_date, t.max_marks, t.course_id
+         FROM unit_tests t
+         JOIN courses c ON t.course_id = c.course_id
+         WHERE t.test_id = ? AND c.teacher_id = ?`,
+        [test_id, teacher_id]
+      );
+
+      if (testRows.length === 0) {
+        return res.status(403).json({ message: "Not authorized or test not found" });
+      }
+
+      const testInfo = testRows[0];
+
+      // Get all active students with their scores
+      const [students] = await pool.execute(
+        `SELECT 
+            st.student_id,
+            st.first_name,
+            st.last_name,
+            ts.marks_obtained,
+            COALESCE(ts.is_absent, FALSE) AS is_absent
+         FROM enrollments e
+         JOIN students st ON e.student_id = st.student_id
+         LEFT JOIN test_scores ts 
+            ON ts.test_id = ?
+            AND ts.student_id = st.student_id
+         WHERE e.course_id = ?
+           AND st.status = 'active'
+         ORDER BY st.first_name, st.last_name`,
+        [test_id, testInfo.course_id]
+      );
+
+      res.json({
+        test_id: testInfo.test_id,
+        title: testInfo.title,
+        test_date: testInfo.test_date,
+        max_marks: testInfo.max_marks,
+        students
+      });
+
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  }
+);
+
+// ==========================================
+// 🎓 INTERNAL MARKS (STATELESS)
+// ==========================================
+
+router.get(
+  "/internal-marks/calculate/:course_id",
+  authenticate,
+  authorize("faculty", "admin"),
+  async (req, res) => {
+    const { course_id } = req.params;
+    const teacher_id = req.user.userId;
+
+    const aw = parseFloat(req.query.aw) || 5;
+    const utw = parseFloat(req.query.utw) || 10;
+    const atw = parseFloat(req.query.atw) || 5;
+
+    try {
+      // 1. Verify Ownership & Get Academic Year
+      const [enrollmentsInfo] = await pool.execute(
+        `SELECT e.academic_year
+         FROM enrollments e
+         JOIN courses c ON e.course_id = c.course_id
+         WHERE c.course_id = ? AND c.teacher_id = ?
+         LIMIT 1`,
+        [course_id, teacher_id]
+      );
+
+      if (enrollmentsInfo.length === 0) {
+        // Might be no enrollments, check if they just own the course
+        const [courseRows] = await pool.execute(
+          `SELECT course_id FROM courses WHERE course_id = ? AND teacher_id = ?`,
+          [course_id, teacher_id]
+        );
+        if (courseRows.length === 0) return res.status(403).json({ message: "Not authorized for this course" });
+        return res.json([]); // No students enrolled
+      }
+
+      const academic_year = enrollmentsInfo[0].academic_year;
+
+      // 2. Get All Enrolled Students
+      const [students] = await pool.execute(
+        `SELECT st.student_id, st.first_name, st.last_name
+         FROM enrollments e
+         JOIN students st ON e.student_id = st.student_id
+         WHERE e.course_id = ? AND e.academic_year = ? AND st.status = 'active'
+         ORDER BY st.first_name, st.last_name`,
+        [course_id, academic_year]
+      );
+
+      // 3. Get Absolute Totals
+      const [[{ total_assignments }]] = await pool.execute(`SELECT COUNT(*) as total_assignments FROM assignments WHERE course_id = ?`, [course_id]);
+      const [[{ total_test_marks }]] = await pool.execute(`SELECT SUM(max_marks) as total_test_marks FROM unit_tests WHERE course_id = ?`, [course_id]);
+      const [[{ total_sessions }]] = await pool.execute(`SELECT COUNT(*) as total_sessions FROM attendance_sessions WHERE course_id = ?`, [course_id]);
+
+      // 4. Get Student Aggregates (Assignments)
+      const [assignmentStats] = await pool.execute(
+        `SELECT sub.student_id, COUNT(*) as submitted_count 
+         FROM assignment_submissions sub 
+         JOIN assignments a ON sub.assignment_id = a.assignment_id 
+         WHERE a.course_id = ? AND sub.submitted = TRUE 
+         GROUP BY sub.student_id`,
+        [course_id]
+      );
+
+      // 5. Get Student Aggregates (Unit Tests)
+      const [testStats] = await pool.execute(
+        `SELECT ts.student_id, SUM(ts.marks_obtained) as total_obtained 
+         FROM test_scores ts 
+         JOIN unit_tests ut ON ts.test_id = ut.test_id 
+         WHERE ut.course_id = ? AND ts.is_absent = FALSE 
+         GROUP BY ts.student_id`,
+        [course_id]
+      );
+
+      // 6. Get Student Aggregates (Attendance)
+      const [attendanceStats] = await pool.execute(
+        `SELECT ar.student_id, COUNT(*) as present_count 
+         FROM attendance_records ar 
+         JOIN attendance_sessions s ON ar.session_id = s.session_id 
+         WHERE s.course_id = ? AND ar.status = 'present' 
+         GROUP BY ar.student_id`,
+        [course_id]
+      );
+
+      // 7. Calculate logic cleanly in memory
+      const calculatedMarks = students.map(student => {
+        const sid = student.student_id;
+
+        // --- Assignment Score ---
+        const aStat = assignmentStats.find(s => s.student_id === sid);
+        const submitted = aStat ? aStat.submitted_count : 0;
+        const totalA = total_assignments || 0;
+        const assignment_score = totalA > 0 ? (submitted / totalA) * aw : 0;
+
+        // --- Unit Test Score ---
+        const tStat = testStats.find(s => s.student_id === sid);
+        const obtained = tStat ? Number(tStat.total_obtained || 0) : 0;
+        const maxT = Number(total_test_marks || 0);
+        const unit_test_score = maxT > 0 ? (obtained / maxT) * utw : 0;
+
+        // --- Attendance Score ---
+        const attStat = attendanceStats.find(s => s.student_id === sid);
+        const present = attStat ? attStat.present_count : 0;
+        const totalS = total_sessions || 0;
+        const attendPercent = totalS > 0 ? (present / totalS) * 100 : 0;
+
+        let baseAttendMark = 0;
+        if (attendPercent >= 96) baseAttendMark = 5;
+        else if (attendPercent >= 91) baseAttendMark = 4;
+        else if (attendPercent >= 86) baseAttendMark = 3;
+        else if (attendPercent >= 81) baseAttendMark = 2;
+        else if (attendPercent >= 75) baseAttendMark = 1;
+
+        // Scale the 1-5 bucket base mark to the configured proportion natively
+        const attendance_score = (baseAttendMark / 5) * atw;
+
+        const total_score = assignment_score + unit_test_score + attendance_score;
+
+        return {
+          student_id: sid,
+          first_name: student.first_name,
+          last_name: student.last_name,
+          assignment_score: Number(assignment_score.toFixed(2)),
+          unit_test_score: Number(unit_test_score.toFixed(2)),
+          attendance_score: Number(attendance_score.toFixed(2)),
+          total_score: Number(total_score.toFixed(2))
+        };
+      });
+
+      res.json(calculatedMarks);
+
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  }
+);
+
+export default router;

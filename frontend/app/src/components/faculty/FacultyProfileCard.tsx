@@ -19,7 +19,7 @@ export const FacultyProfileCard: React.FC<FacultyProfileCardProps> = ({ profile 
         { icon: Mail, label: 'Email', value: profile.email || user?.email || 'N/A' },
         { icon: Hash, label: 'Faculty ID', value: profile.teacher_id || user?.id || (profile as any).id || 'N/A' },
         { icon: GraduationCap, label: 'Designation', value: profile.designation || (profile as any).role || 'Faculty' },
-        { icon: BookOpen, label: 'Department ID', value: profile.department_id || (profile as any).dept_id || (profile as any).department_code || 'N/A' },
+        { icon: BookOpen, label: 'Department', value: profile.department_name || profile.department_id || (profile as any).dept_id || 'N/A' },
     ];
 
     return (

@@ -10,6 +10,9 @@ import {
   FacultyProfileCard,
   FacultyCoursesCard,
   FacultyTimetableTable,
+  AssignmentSection,
+  UnitTestsSection,
+  InternalMarksSection
 } from '@/components';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -48,10 +51,13 @@ import {
   Calendar as CalendarIcon,
   Save,
   Users,
-  TrendingUp
+  TrendingUp,
+  FileText,
+  ClipboardEdit,
+  Calculator
 } from 'lucide-react';
 
-type SectionType = 'profile' | 'courses' | 'attendance' | 'timetable';
+type SectionType = 'profile' | 'courses' | 'attendance' | 'assignments' | 'tests' | 'marks' | 'timetable';
 
 const FacultyDashboard: React.FC = () => {
   const { theme } = useTheme();
@@ -337,13 +343,16 @@ const FacultyDashboard: React.FC = () => {
         >
           <Tabs value={activeSection} onValueChange={(v) => setActiveSection(v as SectionType)} className="w-full space-y-6">
             <TabsList
-              className="grid grid-cols-4 w-full p-1 rounded-xl"
+              className="grid grid-cols-6 w-full p-1 rounded-xl"
               style={{ background: theme.surface }}
             >
               {[
                 { value: 'profile', icon: User, label: 'Profile' },
                 { value: 'courses', icon: BookOpen, label: 'Courses' },
                 { value: 'attendance', icon: CalendarDays, label: 'Attendance' },
+                { value: 'assignments', icon: FileText, label: 'Assignments' },
+                { value: 'tests', icon: ClipboardEdit, label: 'Tests' },
+                { value: 'marks', icon: Calculator, label: 'Internal Marks' },
                 { value: 'timetable', icon: Clock, label: 'Timetable' },
               ].map((tab) => (
                 <TabsTrigger
@@ -522,18 +531,20 @@ const FacultyDashboard: React.FC = () => {
                                 </TableCell>
                                 <TableCell>
                                   <div className="flex items-center gap-3">
-                                    <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                    <div className="w-24 h-2 rounded-full overflow-hidden" style={{ background: `${theme.secondary}20` }}>
                                       <div
                                         className="h-full rounded-full transition-all"
                                         style={{
-                                          width: `${Number(student.attendance_percentage || 0)}%`,
-                                          background: Number(student.attendance_percentage || 0) >= 75 ? theme.success : theme.danger
+                                          width: `${Number(student.total_sessions || 0) === 0 ? 0 : Number(student.attendance_percentage || 0)}%`,
+                                          background: Number(student.total_sessions || 0) === 0
+                                            ? 'transparent'
+                                            : Number(student.attendance_percentage || 0) >= 75 ? theme.success : theme.danger
                                         }}
                                       />
                                     </div>
                                     <div className="flex flex-col">
                                       <span className="text-sm font-medium" style={{ color: theme.text }}>
-                                        {Number(student.attendance_percentage || 0).toFixed(1)}%
+                                        {Number(student.total_sessions || 0) === 0 ? '--' : `${Number(student.attendance_percentage || 0).toFixed(1)}%`}
                                       </span>
                                       <span className="text-xs" style={{ color: theme.textMuted }}>
                                         {student.attended_sessions || 0}/{student.total_sessions || 0} Sessions
@@ -542,7 +553,17 @@ const FacultyDashboard: React.FC = () => {
                                   </div>
                                 </TableCell>
                                 <TableCell>
-                                  {Number(student.attendance_percentage || 0) >= 75 ? (
+                                  {Number(student.total_sessions || 0) === 0 ? (
+                                    <Badge
+                                      className="px-3 py-1 font-medium"
+                                      style={{
+                                        background: `${theme.textMuted}15`,
+                                        color: theme.textMuted
+                                      }}
+                                    >
+                                      No Sessions
+                                    </Badge>
+                                  ) : Number(student.attendance_percentage || 0) >= 75 ? (
                                     <Badge
                                       className="px-3 py-1"
                                       style={{
@@ -759,6 +780,21 @@ const FacultyDashboard: React.FC = () => {
                   )}
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            {/* Assignments Section */}
+            <TabsContent value="assignments">
+              <AssignmentSection courses={courses} />
+            </TabsContent>
+
+            {/* Tests Section */}
+            <TabsContent value="tests">
+              <UnitTestsSection courses={courses} />
+            </TabsContent>
+
+            {/* Internal Marks Section */}
+            <TabsContent value="marks">
+              <InternalMarksSection courses={courses} />
             </TabsContent>
 
             {/* Timetable Section */}

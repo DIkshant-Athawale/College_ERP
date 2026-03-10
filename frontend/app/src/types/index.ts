@@ -306,6 +306,26 @@ export interface Notice {
   image_url?: string;
 }
 
+export interface StudentAssignment {
+  assignment_id: number;
+  title: string;
+  deadline: string | null;
+  course_name: string;
+  course_code: string;
+  submitted: boolean | number;
+}
+
+export interface StudentTest {
+  test_id: number;
+  title: string;
+  test_date: string | null;
+  max_marks: number | string;
+  course_name: string;
+  course_code: string;
+  marks_obtained: number | string | null;
+  is_absent: boolean | number;
+}
+
 export interface StudentDashboardData {
   profile: StudentProfile;
   subjects: DashboardSubject[];
@@ -314,6 +334,8 @@ export interface StudentDashboardData {
   feeRecord: FeeRecord[];
   timetablerows: TimetableEntry[];
   notices: Notice[];
+  assignments: StudentAssignment[];
+  tests: StudentTest[];
 }
 
 // Faculty Dashboard Types
@@ -323,6 +345,8 @@ export interface FacultyProfile {
   last_name: string;
   email: string;
   department_id: number;
+  department_name?: string;
+  primary_phone?: string;
   designation: string;
 }
 
@@ -365,4 +389,99 @@ export interface SessionStudentsResponse {
     first_name: string;
     last_name: string;
   }[];
+}
+
+// Assignment Types
+export interface Assignment {
+  assignment_id: number;
+  title: string;
+  deadline: string | null;
+  created_at: string;
+  total_submissions: number;
+}
+
+export interface AssignmentStudent {
+  student_id: number;
+  first_name: string;
+  last_name: string;
+  submitted: boolean | number;
+  submitted_at: string | null;
+}
+
+export interface AssignmentSubmissionsResponse {
+  assignment_id: number;
+  title: string;
+  deadline: string | null;
+  students: AssignmentStudent[];
+}
+
+export interface CreateAssignmentRequest {
+  course_id: number;
+  title: string;
+  deadline?: string;
+}
+
+export interface SubmitAssignmentSubmissionsRequest {
+  submissions: {
+    student_id: number;
+    submitted: boolean;
+  }[];
+}
+
+// ==============
+// UNIT TESTS
+// ==============
+
+export interface UnitTest {
+  test_id: number;
+  title: string;
+  test_date: string | null;
+  max_marks: number | string;
+  created_at: string;
+  total_scored?: number;
+}
+
+export interface TestStudent {
+  student_id: number;
+  first_name: string;
+  last_name: string;
+  marks_obtained: number | string | null;
+  is_absent: boolean | number;
+}
+
+export interface TestScoresResponse {
+  test_id: number;
+  title: string;
+  test_date: string | null;
+  max_marks: number | string;
+  students: TestStudent[];
+}
+
+export interface CreateTestRequest {
+  course_id: number;
+  title: string;
+  test_date?: string;
+  max_marks: number;
+}
+
+export interface SubmitTestScoresRequest {
+  scores: {
+    student_id: number;
+    marks_obtained?: number | null;
+    is_absent: boolean;
+  }[];
+}
+
+// ==============
+// INTERNAL MARKS (CALCULATED)
+// ==============
+
+export interface StudentInternalMark {
+  student_id: number;
+  first_name: string;
+  last_name: string;
+  assignment_score: number;
+  unit_test_score: number;
+  attendance_score: number;
+  total_score: number;
 }

@@ -5,7 +5,16 @@ import type {
     FacultyStudent,
     SubmitAttendanceRequest,
     CreateSessionResponse,
-    SessionStudentsResponse
+    SessionStudentsResponse,
+    Assignment,
+    CreateAssignmentRequest,
+    AssignmentSubmissionsResponse,
+    SubmitAssignmentSubmissionsRequest,
+    UnitTest,
+    CreateTestRequest,
+    TestScoresResponse,
+    SubmitTestScoresRequest,
+    StudentInternalMark
 } from '@/types';
 
 export const facultyApi = {
@@ -60,4 +69,62 @@ export const facultyApi = {
     submitAttendance: async (data: SubmitAttendanceRequest): Promise<void> => {
         await apiClient.post('/teacher/attendance/submit', data);
     },
+
+    // Assignment APIs
+    getAssignments: async (courseId: number): Promise<{ course_id: number; assignments: Assignment[] }> => {
+        const response = await apiClient.get<{ course_id: number; assignments: Assignment[] }>(`/teacher/assignments/${courseId}`);
+        return response.data;
+    },
+
+    createAssignment: async (data: CreateAssignmentRequest): Promise<{ message: string; assignment_id: number }> => {
+        const response = await apiClient.post<{ message: string; assignment_id: number }>('/teacher/assignments', data);
+        return response.data;
+    },
+
+    deleteAssignment: async (assignmentId: number): Promise<{ message: string }> => {
+        const response = await apiClient.delete<{ message: string }>(`/teacher/assignments/${assignmentId}`);
+        return response.data;
+    },
+
+    getAssignmentSubmissions: async (assignmentId: number): Promise<AssignmentSubmissionsResponse> => {
+        const response = await apiClient.get<AssignmentSubmissionsResponse>(`/teacher/assignments/${assignmentId}/submissions`);
+        return response.data;
+    },
+
+    submitAssignmentSubmissions: async (assignmentId: number, data: SubmitAssignmentSubmissionsRequest): Promise<{ message: string }> => {
+        const response = await apiClient.post<{ message: string }>(`/teacher/assignments/${assignmentId}/submissions`, data);
+        return response.data;
+    },
+
+    // --- Unit Tests ---
+    getTests: async (courseId: number): Promise<{ course_id: number; tests: UnitTest[] }> => {
+        const response = await apiClient.get<{ course_id: number; tests: UnitTest[] }>(`/teacher/tests/${courseId}`);
+        return response.data;
+    },
+
+    createTest: async (data: CreateTestRequest): Promise<{ message: string; test_id: number }> => {
+        const response = await apiClient.post<{ message: string; test_id: number }>('/teacher/tests', data);
+        return response.data;
+    },
+
+    deleteTest: async (testId: number): Promise<{ message: string }> => {
+        const response = await apiClient.delete<{ message: string }>(`/teacher/tests/${testId}`);
+        return response.data;
+    },
+
+    getTestScores: async (testId: number): Promise<TestScoresResponse> => {
+        const response = await apiClient.get<TestScoresResponse>(`/teacher/tests/${testId}/scores`);
+        return response.data;
+    },
+
+    submitTestScores: async (testId: number, data: SubmitTestScoresRequest): Promise<{ message: string }> => {
+        const response = await apiClient.post<{ message: string }>(`/teacher/tests/${testId}/scores`, data);
+        return response.data;
+    },
+
+    // --- Internal Marks ---
+    calculateInternalMarks: async (courseId: number, aw: number, utw: number, atw: number): Promise<StudentInternalMark[]> => {
+        const response = await apiClient.get<StudentInternalMark[]>(`/teacher/internal-marks/calculate/${courseId}?aw=${aw}&utw=${utw}&atw=${atw}`);
+        return response.data;
+    }
 };

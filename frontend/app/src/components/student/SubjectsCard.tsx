@@ -50,7 +50,13 @@ export const SubjectsCard: React.FC<SubjectsCardProps> = ({ subjects }) => {
                                 }}
                             >
                                 <div className="flex justify-between items-start mb-2">
-                                    <span className="text-xs font-mono px-2 py-1 rounded bg-white/50" style={{ color: theme.textMuted }}>
+                                    <span
+                                        className="text-xs font-mono px-2 py-1 rounded transition-colors"
+                                        style={{
+                                            background: `${theme.text}10`,
+                                            color: theme.textMuted
+                                        }}
+                                    >
                                         {subject.course_code}
                                     </span>
                                     <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: theme.primary }} />
