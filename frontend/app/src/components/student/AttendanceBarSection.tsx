@@ -66,7 +66,10 @@ export const AttendanceBarSection: React.FC<AttendanceBarSectionProps> = ({ atte
                                 <div key={index} className="space-y-1">
                                     <div className="flex justify-between text-sm">
                                         <span className="font-medium" style={{ color: theme.text }}>{record.course_name}</span>
-                                        <span style={{ color: percentage >= 75 ? theme.success : theme.warning }}>{percentage.toFixed(1)}%</span>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs" style={{ color: theme.textMuted }}>{record.present_classes}/{record.total_classes}</span>
+                                            <span style={{ color: percentage >= 75 ? theme.success : theme.warning }}>{percentage.toFixed(1)}%</span>
+                                        </div>
                                     </div>
                                     <div className="h-2 w-full rounded-full overflow-hidden" style={{ background: theme.border }}>
                                         <div
