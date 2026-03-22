@@ -1,9 +1,9 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { useTheme } from '@/context/ThemeContext';
-import { GraduationCap, Mail, Calendar, Hash, BookOpen } from 'lucide-react';
+import { Mail, Calendar, Hash, BookOpen } from 'lucide-react';
 import type { StudentProfile } from '@/types';
 
 interface StudentProfileCardProps {
@@ -31,9 +31,8 @@ export const StudentProfileCard: React.FC<StudentProfileCardProps> = ({ profile 
             />
             <CardContent className="pt-20 px-6 pb-6 relative z-10">
                 <div className="text-center mb-6">
-                    <Avatar className="w-24 h-24 mx-auto border-4 mb-4" style={{ borderColor: theme.surface }}>
-                        <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${profile.first_name}`} />
-                        <AvatarFallback>{profile.first_name[0]}{profile.last_name[0]}</AvatarFallback>
+                    <Avatar className="w-24 h-24 mx-auto border-4 mb-4 flex items-center justify-center bg-blue-50 dark:bg-blue-900/20" style={{ borderColor: theme.surface }}>
+                        <span className="text-5xl">👨‍🎓</span>
                     </Avatar>
                     <h2 className="text-2xl font-bold mb-1" style={{ color: theme.text }}>
                         {profile.first_name} {profile.last_name}

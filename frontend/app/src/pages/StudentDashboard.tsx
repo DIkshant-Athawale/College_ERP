@@ -3,10 +3,12 @@ import { motion } from 'framer-motion';
 import { studentApi } from '@/api/student';
 import { useTheme } from '@/context/ThemeContext';
 import type { StudentDashboardData } from '@/types';
+import { useSocket } from '@/context/SocketContext';
 import {
   LoadingSpinner,
   ErrorComponent,
   Navbar,
+  NoticeMarquee,
   StudentProfileCard,
   SubjectsCard,
   AttendanceBarSection,
@@ -42,6 +44,18 @@ const StudentDashboard: React.FC = () => {
   useEffect(() => {
     fetchDashboardData();
   }, []);
+
+  const { socket } = useSocket();
+
+  useEffect(() => {
+    if (!socket) return;
+    socket.on('db_change', () => {
+      fetchDashboardData();
+    });
+    return () => {
+      socket.off('db_change');
+    };
+  }, [socket]);
 
   if (isLoading) {
     return (
@@ -107,7 +121,17 @@ const StudentDashboard: React.FC = () => {
           </div>
         </motion.div>
 
-
+        {/* Notices Marquee */}
+        {data.notices && data.notices.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.2 }}
+            className="mb-8"
+          >
+            <NoticeMarquee notices={data.notices} />
+          </motion.div>
+        )}
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 xl:grid-cols-10 gap-8 items-start">
@@ -250,7 +274,7 @@ const StudentDashboard: React.FC = () => {
             </Card>
             <FeeCard feeRecords={data.feeRecord} />
             <TimetableTable timetable={data.timetablerows} />
-            <EssentialLinksSection canManage={false} addedBy="faculty" />
+            <EssentialLinksSection links={data.essential_links} canManage={false} />
           </div>
         </div>
       </main>

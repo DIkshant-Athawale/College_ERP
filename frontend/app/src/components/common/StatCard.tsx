@@ -12,6 +12,7 @@ interface StatCardProps {
   isLoading?: boolean;
   error?: string | null;
   onRetry?: () => void;
+  onClick?: () => void;
 }
 
 export const StatCard: React.FC<StatCardProps> = ({
@@ -22,6 +23,7 @@ export const StatCard: React.FC<StatCardProps> = ({
   isLoading = false,
   error = null,
   onRetry,
+  onClick,
 }) => {
   const { theme } = useTheme();
   const cardColor = color || theme.primary;
@@ -68,7 +70,10 @@ export const StatCard: React.FC<StatCardProps> = ({
   }
 
   return (
-    <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] overflow-hidden">
+    <Card
+      className={`border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] overflow-hidden ${onClick ? 'cursor-pointer' : ''}`}
+      onClick={onClick}
+    >
       <div className="h-1" style={{ background: cardColor }} />
       <CardContent className="p-6">
         <div className="flex items-center justify-between">

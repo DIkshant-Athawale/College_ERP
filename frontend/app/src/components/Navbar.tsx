@@ -1,5 +1,4 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { Button } from '@/components/ui/button';
@@ -13,8 +12,6 @@ import {
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   LogOut,
-  User,
-  Settings,
   Moon,
   Sun,
   GraduationCap,
@@ -26,23 +23,14 @@ interface NavbarProps {
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ userName, userRole }) => {
-  const { logout, role } = useAuth();
+  const { logout } = useAuth();
   const { theme, isDark, toggleTheme } = useTheme();
-  const navigate = useNavigate();
 
   const handleLogout = async () => {
     await logout();
   };
 
-  const handleProfileClick = () => {
-    if (role === 'student') {
-      navigate('/student/dashboard');
-    } else if (role === 'faculty' || role === 'teacher') {
-      navigate('/teacher/dashboard');
-    } else if (role === 'admin') {
-      navigate('/admin');
-    }
-  };
+
 
   const getInitials = (name: string) => {
     return name
@@ -151,21 +139,7 @@ export const Navbar: React.FC<NavbarProps> = ({ userName, userRole }) => {
                   </p>
                 </div>
                 <DropdownMenuSeparator className="sm:hidden" />
-                <DropdownMenuItem
-                  onClick={handleProfileClick}
-                  className="cursor-pointer"
-                >
-                  <User className="w-4 h-4 mr-2" />
-                  Profile
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => navigate('/admin/settings')}
-                  className="cursor-pointer"
-                >
-                  <Settings className="w-4 h-4 mr-2" />
-                  Settings
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
+
                 <DropdownMenuItem
                   onClick={handleLogout}
                   className="cursor-pointer text-red-500 focus:text-red-500"

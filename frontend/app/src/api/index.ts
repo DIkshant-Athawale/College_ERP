@@ -7,3 +7,5 @@ export * from './courses';
 export * from './students';
 export * from './timetable';
 export * from './faculty';
+export * from './notices';
+export * from './links';

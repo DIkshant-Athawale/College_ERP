@@ -2,18 +2,26 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { facultyApi } from '@/api/faculty';
 import { useTheme } from '@/context/ThemeContext';
-import type { FacultyDashboardData, FacultyStudent, SubmitAttendanceRequest } from '@/types';
+import type { FacultyDashboardData, FacultyStudent, SubmitAttendanceRequest, Course } from '@/types';
+import { useSocket } from '@/context/SocketContext';
 import {
   LoadingSpinner,
   ErrorComponent,
   Navbar,
+  NoticeMarquee,
   FacultyProfileCard,
   FacultyCoursesCard,
   FacultyTimetableTable,
   AssignmentSection,
   UnitTestsSection,
-  InternalMarksSection
+  InternalMarksSection,
+  NoticeFormModal,
+  EssentialLinksSection
 } from '@/components';
+import { noticesApi } from '@/api/notices';
+import { departmentsApi } from '@/api/departments';
+import { toast } from 'sonner';
+import type { Notice, Department, CreateNoticeRequest } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -66,10 +74,11 @@ const FacultyDashboard: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState<SectionType>('profile');
 
-  const [courses, setCourses] = useState<{ course_id: number; course_name: string; course_code: string; total_sessions: number }[]>([]);
+  const [courses, setCourses] = useState<Course[]>([]);
   const [selectedCourse, setSelectedCourse] = useState<string>('');
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-  const [sessionId, setSessionId] = useState<number | null>(null);
+
+  const [isMarkingAttendance, setIsMarkingAttendance] = useState(false);
   const [sessionStudents, setSessionStudents] = useState<{ student_id: number; first_name: string; last_name: string }[]>([]);
   const [attendance, setAttendance] = useState<Record<number, 'present' | 'absent'>>({});
   const [isCreatingSession, setIsCreatingSession] = useState(false);
@@ -94,6 +103,9 @@ const FacultyDashboard: React.FC = () => {
 
       // Merge total_sessions from summaryData into dashboardData.teaches and coursesData.courses
       const sessionsMap = new Map(summaryData.courses.map(c => [c.course_id, c.total_sessions || 0]));
+
+      console.log("Summary Data from API:", summaryData.courses);
+      console.log("Sessions Map:", Object.fromEntries(sessionsMap));
 
       const teachesWithStats = dashboardData.teaches.map(c => ({
         ...c,
@@ -124,10 +136,50 @@ const FacultyDashboard: React.FC = () => {
   };
 
   const [fullTimetable, setFullTimetable] = useState<any[]>([]);
+  const [notices, setNotices] = useState<Notice[]>([]);
+  const [isNoticeModalOpen, setIsNoticeModalOpen] = useState(false);
+  const [isPostingNotice, setIsPostingNotice] = useState(false);
+  const [departments, setDepartments] = useState<Department[]>([]);
+
+  const fetchNotices = () => {
+    noticesApi.getFacultyNotices()
+      .then(({ notices }) => setNotices(notices))
+      .catch(() => setNotices([]));
+  };
 
   useEffect(() => {
     fetchDashboardData();
+    fetchNotices();
+    departmentsApi.getAll().then(depts => setDepartments(depts)).catch(() => { });
   }, []);
+
+  const { socket } = useSocket();
+
+  useEffect(() => {
+    if (!socket) return;
+    socket.on('db_change', () => {
+      fetchNotices();
+      fetchDashboardData(); // Update stats as well
+    });
+    return () => {
+      socket.off('db_change');
+    };
+  }, [socket]);
+
+  const handlePostNotice = async (data: CreateNoticeRequest) => {
+    setIsPostingNotice(true);
+    try {
+      await noticesApi.createFacultyNotice(data);
+      toast.success('Notice posted successfully');
+      setIsNoticeModalOpen(false);
+      fetchNotices(); // Refresh directly
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to post notice');
+    } finally {
+      setIsPostingNotice(true);
+      setTimeout(() => setIsPostingNotice(false), 200);
+    }
+  };
 
   useEffect(() => {
     if (activeSection === 'timetable' && fullTimetable.length === 0) {
@@ -163,20 +215,19 @@ const FacultyDashboard: React.FC = () => {
 
     try {
       setIsCreatingSession(true);
-      const dateStr = format(selectedDate, 'yyyy-MM-dd');
-      const session = await facultyApi.createSession(parseInt(selectedCourse), dateStr);
-      setSessionId(session.session_id);
+      // Fetch the students for the course without creating a session yet
+      const courseData = await facultyApi.getCourseAttendance(selectedCourse);
 
-      const studentsData = await facultyApi.getSessionStudents(session.session_id);
-      setSessionStudents(studentsData.students);
+      setSessionStudents(courseData.students);
 
       const initialAttendance: Record<number, 'present' | 'absent'> = {};
-      studentsData.students.forEach((s) => {
+      courseData.students.forEach((s) => {
         initialAttendance[s.student_id] = 'present';
       });
       setAttendance(initialAttendance);
+      setIsMarkingAttendance(true);
     } catch (err) {
-      setError('Failed to create session.');
+      setError('Failed to fetch students for this course.');
     } finally {
       setIsCreatingSession(false);
     }
@@ -187,12 +238,18 @@ const FacultyDashboard: React.FC = () => {
   };
 
   const handleSubmitAttendance = async () => {
-    if (!sessionId) return;
+    if (!selectedCourse || !selectedDate || !isMarkingAttendance) return;
 
     try {
       setIsSubmitting(true);
+
+      // 1. Create the session
+      const dateStr = format(selectedDate, 'yyyy-MM-dd');
+      const session = await facultyApi.createSession(parseInt(selectedCourse), dateStr);
+
+      // 2. Submit the attendance with the generated session ID
       const attendanceData: SubmitAttendanceRequest = {
-        session_id: sessionId,
+        session_id: session.session_id,
         attendance: Object.entries(attendance).map(([student_id, status]) => ({
           student_id: parseInt(student_id),
           status,
@@ -200,13 +257,20 @@ const FacultyDashboard: React.FC = () => {
       };
       await facultyApi.submitAttendance(attendanceData);
 
-      setSessionId(null);
+      setIsMarkingAttendance(false);
       setSessionStudents([]);
       setAttendance({});
       setSelectedCourse('');
-      alert('Attendance submitted successfully!');
-    } catch (err) {
-      setError('Failed to submit attendance.');
+      toast.success('Attendance submitted successfully!');
+
+      // Refresh the dashboard data to update the session counts and stats
+      await fetchDashboardData();
+    } catch (err: any) {
+      if (err.response?.status === 409) {
+        toast.error('A session already exists for this date.');
+      } else {
+        toast.error('Failed to submit attendance.');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -242,12 +306,22 @@ const FacultyDashboard: React.FC = () => {
 
   const userName = `${data.profile.first_name} ${data.profile.last_name}`;
 
+  const handleSectionChange = (section: SectionType) => {
+    setActiveSection(section);
+    setTimeout(() => {
+      const element = document.getElementById('main-content-tabs');
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 100);
+  };
+
   // Quick stats
   const quickStats = [
-    { icon: BookOpen, label: 'Courses', value: data.teaches.length, color: theme.primary },
+    { icon: BookOpen, label: 'Courses', value: data.teaches.length, color: theme.primary, onClick: () => handleSectionChange('courses') },
     { icon: Users, label: 'Students', value: data.stats?.total_students || 0, color: theme.success },
-    { icon: CalendarDays, label: 'Classes/Week', value: data.stats?.classes_per_week || 0, color: theme.info },
-    { icon: TrendingUp, label: 'Avg Attendance', value: `${data.stats?.avg_attendance || 0}%`, color: theme.warning },
+    { icon: CalendarDays, label: 'Classes/Week', value: data.stats?.classes_per_week || 0, color: theme.info, onClick: () => handleSectionChange('timetable') },
+    { icon: TrendingUp, label: 'Avg Attendance', value: `${data.stats?.avg_attendance || 0}%`, color: theme.warning, onClick: () => handleSectionChange('attendance') },
   ];
 
   return (
@@ -274,19 +348,28 @@ const FacultyDashboard: React.FC = () => {
                 Manage your courses and track student attendance
               </p>
             </div>
-            <div
-              className="flex items-center gap-2 px-4 py-2 rounded-xl"
-              style={{ background: `${theme.secondary}10` }}
-            >
-              <Clock className="w-5 h-5" style={{ color: theme.secondary }} />
-              <span className="text-sm font-medium" style={{ color: theme.text }}>
-                {new Date().toLocaleDateString('en-US', {
-                  weekday: 'long',
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric'
-                })}
-              </span>
+            <div className="flex flex-wrap items-center gap-2">
+              <div
+                className="flex items-center gap-2 px-4 py-2 rounded-xl"
+                style={{ background: `${theme.secondary}10` }}
+              >
+                <Clock className="w-5 h-5" style={{ color: theme.secondary }} />
+                <span className="text-sm font-medium" style={{ color: theme.text }}>
+                  {new Date().toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  })}
+                </span>
+              </div>
+              <button
+                onClick={() => setIsNoticeModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-transform hover:scale-105"
+                style={{ background: theme.primary, color: '#fff' }}
+              >
+                Post Notice
+              </button>
             </div>
           </div>
         </motion.div>
@@ -306,8 +389,9 @@ const FacultyDashboard: React.FC = () => {
               transition={{ delay: 0.2 + index * 0.1 }}
             >
               <Card
-                className="border-0 shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.02] cursor-pointer"
+                className={`border-0 shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.02] ${stat.onClick ? 'cursor-pointer' : ''}`}
                 style={{ background: theme.surface }}
+                onClick={stat.onClick}
               >
                 <CardContent className="p-5">
                   <div className="flex items-center justify-between">
@@ -335,15 +419,28 @@ const FacultyDashboard: React.FC = () => {
           ))}
         </motion.div>
 
+        {/* Notices Marquee */}
+        {notices.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.25 }}
+            className="mb-8"
+          >
+            <NoticeMarquee notices={notices} />
+          </motion.div>
+        )}
+
         {/* Main Content Tabs */}
         <motion.div
+          id="main-content-tabs"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.3 }}
         >
           <Tabs value={activeSection} onValueChange={(v) => setActiveSection(v as SectionType)} className="w-full space-y-6">
             <TabsList
-              className="grid grid-cols-6 w-full p-1 rounded-xl"
+              className="grid grid-cols-7 w-full p-1 rounded-xl"
               style={{ background: theme.surface }}
             >
               {[
@@ -465,6 +562,8 @@ const FacultyDashboard: React.FC = () => {
                     courses={data.teaches.slice(0, 3)}
                     onCourseClick={handleCourseClick}
                   />
+
+                  <EssentialLinksSection links={data.essential_links} canManage={false} />
                 </div>
               </div>
             </TabsContent>
@@ -628,7 +727,7 @@ const FacultyDashboard: React.FC = () => {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  {!sessionId ? (
+                  {!isMarkingAttendance ? (
                     <div className="space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
@@ -685,7 +784,7 @@ const FacultyDashboard: React.FC = () => {
                         className="h-12 px-6 rounded-xl text-white font-medium"
                         style={{ background: theme.gradient }}
                       >
-                        {isCreatingSession ? 'Creating Session...' : 'Create Session'}
+                        {isCreatingSession ? 'Loading Students...' : 'Create Session'}
                       </Button>
                     </div>
                   ) : (
@@ -699,13 +798,13 @@ const FacultyDashboard: React.FC = () => {
                             Session Created
                           </p>
                           <p className="text-sm" style={{ color: theme.textMuted }}>
-                            Session ID: #{sessionId}
+                            Mark attendance and click Save
                           </p>
                         </div>
                         <Button
                           variant="outline"
                           onClick={() => {
-                            setSessionId(null);
+                            setIsMarkingAttendance(false);
                             setSessionStudents([]);
                             setAttendance({});
                           }}
@@ -804,6 +903,16 @@ const FacultyDashboard: React.FC = () => {
           </Tabs>
         </motion.div>
       </main>
+
+      {/* Notice Creation Modal */}
+      <NoticeFormModal
+        isOpen={isNoticeModalOpen}
+        onClose={() => setIsNoticeModalOpen(false)}
+        onSubmit={handlePostNotice}
+        isLoading={isPostingNotice}
+        departments={departments}
+        role="faculty"
+      />
     </div>
   );
 };

@@ -24,7 +24,8 @@ export const timetableApi = {
   },
 
   editSlot: async (data: EditTimetableSlotRequest): Promise<{ message?: string }> => {
-    const response = await apiClient.post('/admin/time_slots', data);
+    const { timetable_id, ...payload } = data;
+    const response = await apiClient.put(`/admin/timetable/${timetable_id}`, payload);
     return response.data;
   },
 

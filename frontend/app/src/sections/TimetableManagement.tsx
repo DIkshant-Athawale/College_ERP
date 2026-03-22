@@ -75,10 +75,13 @@ export const TimetableManagement: React.FC = () => {
     course_id: '',
   });
 
-  const [timeData, setTimeData] = useState({
+  const [editFormData, setEditFormData] = useState({
+    timetable_id: 0,
+    department_id: '',
+    semester: '',
+    day: '',
     slot_id: '',
-    start_time: '',
-    end_time: '',
+    course_id: '',
   });
 
   useEffect(() => {
@@ -134,10 +137,13 @@ export const TimetableManagement: React.FC = () => {
 
   const handleOpenEditTime = (slot: TimetableSlot) => {
     setSelectedSlot(slot);
-    setTimeData({
-      slot_id: String(slot.slot_id || slot.timetable_id),
-      start_time: slot.start_time,
-      end_time: slot.end_time,
+    setEditFormData({
+      timetable_id: slot.timetable_id,
+      department_id: filters.department_id,
+      semester: filters.semester,
+      day: slot.day,
+      slot_id: String(slot.slot_id || ''),
+      course_id: String(courses.find(c => c.course_code === slot.course_code)?.course_id || ''),
     });
     setIsEditTimeModalOpen(true);
   };
@@ -176,15 +182,16 @@ export const TimetableManagement: React.FC = () => {
   const handleEditTimeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!timeData.slot_id || !timeData.start_time || !timeData.end_time) {
+    if (!editFormData.timetable_id || !editFormData.day || !editFormData.slot_id) {
       return;
     }
 
     setIsSubmitting(true);
     const success = await editTimetableSlot({
-      slot_id: timeData.slot_id,
-      start_time: timeData.start_time,
-      end_time: timeData.end_time,
+      timetable_id: editFormData.timetable_id,
+      day: editFormData.day,
+      slot_id: editFormData.slot_id,
+      course_id: editFormData.course_id,
     });
     setIsSubmitting(false);
 
@@ -468,25 +475,25 @@ export const TimetableManagement: React.FC = () => {
         </form>
       </Modal>
 
-      {/* Edit Time Modal */}
+      {/* Edit Timetable Entry Modal */}
       <Modal
         isOpen={isEditTimeModalOpen}
         onClose={() => setIsEditTimeModalOpen(false)}
-        title="Edit Slot Time"
+        title="Edit Timetable Entry"
       >
         <form onSubmit={handleEditTimeSubmit} className="space-y-4">
-          <FormInput
-            label="Start Time"
-            type="time"
-            value={timeData.start_time}
-            onChange={(e) => setTimeData({ ...timeData, start_time: e.target.value })}
+          <FormSelect
+            label="Day"
+            value={editFormData.day}
+            onChange={(value) => setEditFormData({ ...editFormData, day: value })}
+            options={DAY_OPTIONS}
             required
           />
-          <FormInput
-            label="End Time"
-            type="time"
-            value={timeData.end_time}
-            onChange={(e) => setTimeData({ ...timeData, end_time: e.target.value })}
+          <FormSelect
+            label="Slot Number"
+            value={editFormData.slot_id}
+            onChange={(value) => setEditFormData({ ...editFormData, slot_id: value })}
+            options={slotOptions}
             required
           />
           <div className="flex justify-end gap-3 pt-4">
@@ -504,7 +511,7 @@ export const TimetableManagement: React.FC = () => {
               className="text-white"
               style={{ background: theme.gradient }}
             >
-              {isSubmitting ? 'Saving...' : 'Update Time'}
+              {isSubmitting ? 'Saving...' : 'Update Entry'}
             </Button>
           </div>
         </form>

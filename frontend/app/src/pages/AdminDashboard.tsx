@@ -1,8 +1,12 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
-import { Navbar, StatCard, LoadingSpinner } from '@/components';
+import { Navbar, StatCard, LoadingSpinner, NoticeMarquee, NoticeFormModal } from '@/components';
+import { noticesApi } from '@/api/notices';
+import { useSocket } from '@/context/SocketContext';
+import { toast } from 'sonner';
+import type { Notice, CreateNoticeRequest } from '@/types';
 import {
   ManageDepartments,
   ManageTeachers,
@@ -10,8 +14,10 @@ import {
   ManageStudents,
   StudentStatusManagement,
   TimetableManagement,
+  ManageEssentialLinks,
 } from '@/sections';
 import { useStatistics } from '@/hooks';
+import { useDepartments } from '@/hooks/useDepartments';
 import { Card, CardContent } from '@/components/ui/card';
 import {
   Accordion,
@@ -34,10 +40,58 @@ const AdminDashboard: React.FC = () => {
   const { theme } = useTheme();
   const { user } = useAuth();
   const { statistics, isLoading, error, refetch } = useStatistics();
+  const { departments } = useDepartments();
   const [activeSection, setActiveSection] = useState<SectionType | null>(null);
+  const [notices, setNotices] = useState<Notice[]>([]);
+  const [isNoticeModalOpen, setIsNoticeModalOpen] = useState(false);
+  const [isPostingNotice, setIsPostingNotice] = useState(false);
+
+  const fetchNotices = () => {
+    noticesApi.getAdminNotices()
+      .then(({ notices }) => setNotices(notices))
+      .catch(() => setNotices([]));
+  };
+
+  useEffect(() => {
+    fetchNotices();
+  }, []);
+
+  const { socket } = useSocket();
+
+  useEffect(() => {
+    if (!socket) return;
+    socket.on('db_change', () => {
+      fetchNotices();
+      refetch(); // Update stats as well
+    });
+    return () => {
+      socket.off('db_change');
+    };
+  }, [socket]);
+
+  const handlePostNotice = async (data: CreateNoticeRequest) => {
+    setIsPostingNotice(true);
+    try {
+      await noticesApi.createAdminNotice(data);
+      toast.success('Notice posted successfully');
+      setIsNoticeModalOpen(false);
+      fetchNotices(); // Refresh notices immediately
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to post notice');
+    } finally {
+      setIsPostingNotice(true); // Let modal unmount finish without visual glitch
+      setTimeout(() => setIsPostingNotice(false), 200);
+    }
+  };
 
   const handleSectionChange = (value: string) => {
     setActiveSection(value as SectionType);
+    setTimeout(() => {
+      const element = document.getElementById('management-sections');
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 100);
   };
 
   const stats = [
@@ -49,6 +103,7 @@ const AdminDashboard: React.FC = () => {
       isLoading,
       error,
       onRetry: refetch,
+      onClick: () => handleSectionChange('departments'),
     },
     {
       title: 'Total Teachers',
@@ -58,6 +113,7 @@ const AdminDashboard: React.FC = () => {
       isLoading,
       error,
       onRetry: refetch,
+      onClick: () => handleSectionChange('teachers'),
     },
     {
       title: 'Total Students',
@@ -67,6 +123,7 @@ const AdminDashboard: React.FC = () => {
       isLoading,
       error,
       onRetry: refetch,
+      onClick: () => handleSectionChange('students'),
     },
     {
       title: 'Total Courses',
@@ -76,6 +133,7 @@ const AdminDashboard: React.FC = () => {
       isLoading,
       error,
       onRetry: refetch,
+      onClick: () => handleSectionChange('courses'),
     },
   ];
 
@@ -108,6 +166,13 @@ const AdminDashboard: React.FC = () => {
       color: theme.primary,
       component: <ManageStudents />,
     },
+    {
+      id: 'links',
+      title: 'Manage Essential Links',
+      icon: BookOpen, // Or any appropriate lucide icon like Link2 if imported
+      color: theme.info,
+      component: <ManageEssentialLinks />,
+    },
   ];
 
   if (!user) {
@@ -138,14 +203,24 @@ const AdminDashboard: React.FC = () => {
                 Welcome to the administration panel. Manage your institution from here.
               </p>
             </div>
-            <div
-              className="flex items-center gap-2 px-4 py-2 rounded-xl"
-              style={{ background: `${theme.primary}10` }}
-            >
-              <Activity className="w-5 h-5" style={{ color: theme.primary }} />
-              <span className="text-sm font-medium" style={{ color: theme.text }}>
-                System Status: <span style={{ color: theme.success }}>Operational</span>
-              </span>
+            <div className="flex flex-wrap items-center gap-2">
+              <div
+                className="flex items-center gap-2 px-4 py-2 rounded-xl"
+                style={{ background: `${theme.primary}10` }}
+              >
+                <Activity className="w-5 h-5" style={{ color: theme.primary }} />
+                <span className="text-sm font-medium" style={{ color: theme.text }}>
+                  System Status: <span style={{ color: theme.success }}>Operational</span>
+                </span>
+              </div>
+
+              <button
+                onClick={() => setIsNoticeModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-transform hover:scale-105"
+                style={{ background: theme.primary, color: '#fff' }}
+              >
+                Post Notice
+              </button>
             </div>
           </div>
         </motion.div>
@@ -169,8 +244,21 @@ const AdminDashboard: React.FC = () => {
           ))}
         </motion.div>
 
+        {/* Notices Marquee */}
+        {notices.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.25 }}
+            className="mb-8"
+          >
+            <NoticeMarquee notices={notices} />
+          </motion.div>
+        )}
+
         {/* Management Sections */}
         <motion.div
+          id="management-sections"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.3 }}
@@ -263,6 +351,16 @@ const AdminDashboard: React.FC = () => {
           </motion.div>
         </motion.div>
       </main>
+
+      {/* Notice Creation Modal */}
+      <NoticeFormModal
+        isOpen={isNoticeModalOpen}
+        onClose={() => setIsNoticeModalOpen(false)}
+        onSubmit={handlePostNotice}
+        isLoading={isPostingNotice}
+        departments={departments}
+        role="admin"
+      />
     </div>
   );
 };

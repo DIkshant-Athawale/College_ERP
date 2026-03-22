@@ -8,7 +8,81 @@ import authorize from '../middleware/authorize.js';
 const router = express.Router()
 
 //fee management
-//notices
+
+// ========================
+// NOTICES
+// ========================
+
+// Create a notice (admin — broadcasts to all departments)
+router.post(
+  "/notices",
+  authenticate,
+  authorize("admin"),
+  async (req, res) => {
+    const { title, message, department_id, year, target_audience } = req.body;
+
+    if (!title || !message) {
+      return res.status(400).json({ message: "title and message are required" });
+    }
+
+    try {
+      const [result] = await pool.execute(
+        `INSERT INTO notices (title, message, posted_by, posted_by_id, department_id, year, target_audience)
+         VALUES (?, ?, 'admin', ?, ?, ?, ?)`,
+        [title.trim(), message.trim(), req.user.userId,
+        department_id || null, year || null, target_audience || 'all']
+      );
+
+      const io = req.app.get('io');
+      if (io) {
+        io.emit('refresh_notices', { message: 'New notice from admin' });
+      }
+
+      res.status(201).json({
+        message: "Notice posted",
+        notice_id: result.insertId,
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  }
+);
+
+// Get recent notices — admin sees everything
+router.get(
+  "/notices/recent",
+  authenticate,
+  authorize("admin"),
+  async (req, res) => {
+    try {
+      const [notices] = await pool.execute(
+        `SELECT 
+            n.notice_id,
+            n.title,
+            n.message,
+            n.posted_by,
+            CONCAT(t.first_name, ' ', t.last_name) AS posted_by_name,
+            n.posted_at,
+            n.department_id,
+            n.year,
+            n.target_audience,
+            d.department_name
+         FROM notices n
+         JOIN teachers t ON n.posted_by_id = t.teacher_id
+         LEFT JOIN department d ON n.department_id = d.department_id
+         WHERE n.posted_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+         ORDER BY n.posted_at DESC
+         LIMIT 20`
+      );
+
+      res.json({ notices });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  }
+);
 
 
 //total department
@@ -467,6 +541,39 @@ router.post("/timetable", authenticate, authorize("admin"), async (req, res) => 
     res.status(500).json({ message: "Internal server error" });
   }
 })
+
+// Edit a specific timetable entry
+router.put(
+  "/timetable/:id",
+  authenticate,
+  authorize("admin"),
+  async (req, res) => {
+    const { id } = req.params;
+    const { day, slot_id, course_id } = req.body;
+
+    if (!day || !slot_id || !course_id) {
+      return res.status(400).json({ message: "day, slot_id, and course_id are required" });
+    }
+
+    try {
+      const [result] = await pool.execute(
+        `UPDATE timetable 
+         SET day = ?, slot_id = ?, course_id = ?
+         WHERE timetable_id = ?`,
+        [day, slot_id, course_id, id]
+      );
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ message: "Timetable entry not found" });
+      }
+
+      res.json({ message: "Timetable entry updated successfully" });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  }
+);
 
 
 
@@ -1832,5 +1939,60 @@ router.put(
 
 
 
+
+// ========================
+// ESSENTIAL LINKS
+// ========================
+
+router.get("/essential_links", authenticate, authorize("admin"), async (req, res) => {
+  try {
+    const [links] = await pool.execute(
+      `SELECT link_id, title, url FROM essential_links ORDER BY link_id DESC`
+    );
+    res.json({ links });
+  } catch (error) {
+    console.error("Error fetching essential links:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+router.post("/essential_links", authenticate, authorize("admin"), async (req, res) => {
+  const { title, url } = req.body;
+
+  if (!title || !url) {
+    return res.status(400).json({ message: "title and url are required" });
+  }
+
+  try {
+    const [result] = await pool.execute(
+      `INSERT INTO essential_links (title, url) VALUES (?, ?)`,
+      [title.trim(), url.trim()]
+    );
+    res.status(201).json({ message: "Link added successfully", link_id: result.insertId });
+  } catch (error) {
+    console.error("Error inserting essential link:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+router.delete("/essential_links/:id", authenticate, authorize("admin"), async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const [result] = await pool.execute(
+      `DELETE FROM essential_links WHERE link_id = ?`,
+      [id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Link not found" });
+    }
+
+    res.json({ message: "Link deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting essential link:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
 
 export default router

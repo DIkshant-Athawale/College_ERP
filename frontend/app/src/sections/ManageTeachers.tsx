@@ -4,6 +4,7 @@ import { useTeachers, useDepartments } from '@/hooks';
 import { DataTable, Modal, FormInput, ConfirmDialog, FormSelect } from '@/components/common';
 import { Button } from '@/components/ui/button';
 import { Plus, Pencil, Trash2, Users } from 'lucide-react';
+import { useSocket } from '@/context/SocketContext';
 import { Input } from '@/components/ui/input';
 import { validateTeacherForm } from '@/utils/validation';
 import type { Teacher, CreateTeacherRequest } from '@/types';
@@ -44,6 +45,19 @@ export const ManageTeachers: React.FC = () => {
       fetchTeachersByDepartment('');
     }
   }, [selectedDepartment]);
+
+  const { socket } = useSocket();
+
+  useEffect(() => {
+    if (!socket) return;
+    const handleDbChange = () => {
+      fetchTeachersByDepartment(selectedDepartment || '');
+    };
+    socket.on('db_change', handleDbChange);
+    return () => {
+      socket.off('db_change', handleDbChange);
+    };
+  }, [socket, selectedDepartment]);
 
   const departmentOptions = departments.map((d) => ({
     value: String(d.department_id),

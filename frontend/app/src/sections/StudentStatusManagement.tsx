@@ -181,11 +181,11 @@ export const StudentStatusManagement: React.FC = () => {
               <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: `${theme.warning}15` }}>
                 <UserX className="w-6 h-6" style={{ color: theme.warning }} />
               </div>
-              <CardTitle className="text-lg font-bold" style={{ color: theme.text }}>Detain Students</CardTitle>
+              <CardTitle className="text-lg font-bold" style={{ color: theme.text }}>Discontinue Students</CardTitle>
             </div>
           </CardHeader>
           <CardContent>
-            <p className="text-sm" style={{ color: theme.textMuted }}>Mark students as detained for academic reasons</p>
+            <p className="text-sm" style={{ color: theme.textMuted }}>Discontinue students for academic reasons</p>
           </CardContent>
         </Card>
 
@@ -203,7 +203,7 @@ export const StudentStatusManagement: React.FC = () => {
             </div>
           </CardHeader>
           <CardContent>
-            <p className="text-sm" style={{ color: theme.textMuted }}>Re-enroll detained students back to active status</p>
+            <p className="text-sm" style={{ color: theme.textMuted }}>Re-enroll discontinued students back to active status</p>
           </CardContent>
         </Card>
       </div>
@@ -234,7 +234,7 @@ export const StudentStatusManagement: React.FC = () => {
       />
 
       {/* Detain Modal (Full Screen / Large) */}
-      <Modal isOpen={isDetainOpen} onClose={() => setIsDetainOpen(false)} title="Detain Students" maxWidth="max-w-4xl">
+      <Modal isOpen={isDetainOpen} onClose={() => setIsDetainOpen(false)} title="Discontinue Students" maxWidth="max-w-4xl">
         <div className="space-y-4">
           <div className="grid grid-cols-1 gap-4 p-2">
             <FormSelect label="Department" value={detainFilters.department_id} onChange={(v) => setDetainFilters({ ...detainFilters, department_id: v })} options={departmentOptions} />
@@ -259,7 +259,7 @@ export const StudentStatusManagement: React.FC = () => {
                 { key: 'semester', header: 'Sem' },
                 {
                   key: 'actions', header: 'Action', render: (s) => (
-                    <Button size="sm" variant="destructive" onClick={() => confirmDetain(s)}>Detain</Button>
+                    <Button size="sm" variant="destructive" onClick={() => confirmDetain(s)}>Discontinue</Button>
                   )
                 }
               ]}
@@ -273,9 +273,9 @@ export const StudentStatusManagement: React.FC = () => {
         isOpen={isDetainConfirmOpen}
         onClose={() => setIsDetainConfirmOpen(false)}
         onConfirm={executeDetain}
-        title="Confirm Details"
-        description={`Are you sure you want to detain ${selectedStudent?.first_name}?`}
-        confirmText="Confirm Detain"
+        title="Confirm Discontinuation"
+        description={`Are you sure you want to discontinue ${selectedStudent?.first_name}?`}
+        confirmText="Confirm Discontinue"
         isLoading={isSubmitting}
         variant="danger"
       >

@@ -171,9 +171,10 @@ export interface CreateTimetableRequest {
 }
 
 export interface EditTimetableSlotRequest {
+  timetable_id: number;
+  day: string;
   slot_id: string | number;
-  start_time: string;
-  end_time: string;
+  course_id: string | number;
 }
 
 export interface TimeSlot {
@@ -303,7 +304,19 @@ export interface Notice {
   posted_by: string;
   posted_by_name: string;
   posted_at: string;
+  department_id?: number | null;
+  department_name?: string | null;
+  year?: number | null;
+  target_audience?: 'all' | 'students' | 'teachers';
   image_url?: string;
+}
+
+export interface CreateNoticeRequest {
+  title: string;
+  message: string;
+  department_id?: number | null;
+  year?: number | null;
+  target_audience?: 'all' | 'students' | 'teachers';
 }
 
 export interface StudentAssignment {
@@ -326,6 +339,12 @@ export interface StudentTest {
   is_absent: boolean | number;
 }
 
+export interface EssentialLink {
+  link_id: number;
+  title: string;
+  url: string;
+}
+
 export interface StudentDashboardData {
   profile: StudentProfile;
   subjects: DashboardSubject[];
@@ -336,6 +355,7 @@ export interface StudentDashboardData {
   notices: Notice[];
   assignments: StudentAssignment[];
   tests: StudentTest[];
+  essential_links: EssentialLink[];
 }
 
 // Faculty Dashboard Types
@@ -368,6 +388,7 @@ export interface FacultyDashboardData {
     classes_per_week: number;
     avg_attendance: string | number;
   };
+  essential_links: EssentialLink[];
 }
 
 export interface SubmitAttendanceRequest {

@@ -457,26 +457,7 @@ const Login: React.FC = () => {
               </motion.div>
             </form>
 
-            {/* Demo Credentials */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.9 }}
-              className="mt-6 p-4 rounded-xl"
-              style={{ background: `${theme.primary}10` }}
-            >
-              <p
-                className="text-sm font-semibold mb-2"
-                style={{ color: theme.primary }}
-              >
-                Demo Credentials:
-              </p>
-              <div className="space-y-1 text-xs" style={{ color: theme.textMuted }}>
-                <p><strong>Student:</strong> student@college.edu / password123</p>
-                <p><strong>Teacher:</strong> teacher@college.edu / password123</p>
-                <p><strong>Admin:</strong> admin@college.edu / password123</p>
-              </div>
-            </motion.div>
+
           </CardContent>
         </Card>
       </motion.div>

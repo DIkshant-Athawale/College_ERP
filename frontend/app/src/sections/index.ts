@@ -4,3 +4,4 @@ export { ManageCourses } from './ManageCourses';
 export { ManageStudents } from './ManageStudents';
 export { StudentStatusManagement } from './StudentStatusManagement';
 export { TimetableManagement } from './TimetableManagement';
+export { ManageEssentialLinks } from './ManageEssentialLinks';

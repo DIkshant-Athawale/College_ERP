@@ -23,48 +23,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const checkAuth = useCallback(async (): Promise<boolean> => {
     if (import.meta.env.DEV) console.debug('[authContext] checkAuth start');
-    const token = localStorage.getItem('token');
-    if (!token) {
-      // try refresh via cookie
-      try {
-        const resp = await authApi.getCurrentUser();
-        if (import.meta.env.DEV) console.debug('[authContext] refresh resp', resp);
-        if (resp?.token) {
-          localStorage.setItem('token', resp.token);
-          setUser(resp.user);
-          setIsLoading(false);
-          return true;
-        }
-      } catch (e) {
-        if (import.meta.env.DEV) console.warn('[authContext] refresh failed', e);
-        setIsLoading(false);
-        return false;
-      }
 
-      setIsLoading(false);
-      return false;
-    }
-
-    // token exists locally; decode server-side by attempting refresh to validate
     try {
-      const resp = await authApi.getCurrentUser();
-      if (import.meta.env.DEV) console.debug('[authContext] getCurrentUser resp', resp);
-      if (resp?.token) {
-        localStorage.setItem('token', resp.token);
-        setUser(resp.user);
+      // Try to refresh token via cookie and fetch real profile
+      const result = await authApi.getCurrentUser();
+
+      if (result.token && result.user) {
+        localStorage.setItem('token', result.token);
+        localStorage.setItem('user', JSON.stringify(result.user));
+        setUser(result.user);
+        setIsLoading(false);
         return true;
       }
-      // fallback: keep existing token but minimal user
-      setUser({ role: null } as any);
-      return !!token;
-    } catch (error) {
-      if (import.meta.env.DEV) console.error('[authContext] validate token failed', error);
+
+      // No valid session
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       setUser(null);
-      return false;
-    } finally {
       setIsLoading(false);
+      return false;
+    } catch (error) {
+      if (import.meta.env.DEV) console.error('[authContext] checkAuth failed', error);
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      setUser(null);
+      setIsLoading(false);
+      return false;
     }
   }, []);
 
@@ -78,27 +62,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const response = await authApi.login(credentials);
       if (import.meta.env.DEV) console.debug('[authContext] login response', response);
 
-      // store access token and minimal user info
       if (response.token) {
         localStorage.setItem('token', response.token);
-      }
 
-      const userObj = response.user || null;
-      if (userObj) {
-        // ensure we persist a minimal shape
-        const persisted = { ...userObj, role: (userObj as any).role || response.role || null } as any;
-        localStorage.setItem('user', JSON.stringify(persisted));
-        setUser(persisted as any);
-      } else {
-        setUser(null);
-      }
+        // Fetch real profile from /login/me
+        const profile = await authApi.fetchProfile();
 
-      toast.success('Login successful!');
+        if (profile) {
+          localStorage.setItem('user', JSON.stringify(profile));
+          setUser(profile as any);
+        } else {
+          // Fallback: minimal user from login response
+          const minimal = { role: response.role, userType: response.userType } as any;
+          localStorage.setItem('user', JSON.stringify(minimal));
+          setUser(minimal);
+        }
 
-      // Redirect is handled by the Login component to avoid race conditions
-      if (import.meta.env.DEV) {
-        const resolvedRole = (response.user && (response.user as any).role) || response.role || (response.user && (response.user as any).userType) || null;
-        console.debug('[authContext] login success, role:', resolvedRole);
+        toast.success('Login successful!');
       }
     } catch (error) {
       toast.error('Login failed. Please check your credentials.');

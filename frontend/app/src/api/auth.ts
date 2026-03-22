@@ -1,20 +1,6 @@
 import apiClient from './axios';
 import type { LoginCredentials } from '@/types';
 
-// Decode JWT payload without extra dependency
-function decodeJwt(token: string) {
-  try {
-    const payload = token.split('.')[1];
-    const json = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
-    const parsed = JSON.parse(decodeURIComponent(escape(json)));
-    if (import.meta.env.DEV) console.debug('[auth] decoded JWT payload', parsed);
-    return parsed;
-  } catch (e) {
-    console.error('[auth] Failed to decode JWT', e);
-    return null;
-  }
-}
-
 export const authApi = {
   login: async (credentials: LoginCredentials) => {
     const response = await apiClient.post('/login', credentials);
@@ -22,63 +8,65 @@ export const authApi = {
     const data = response.data;
     if (import.meta.env.DEV) console.debug('[auth] login response', data);
     const accessToken: string = data.accessToken || data.token;
-    const payload = accessToken ? decodeJwt(accessToken) : null;
 
-    const result = {
+    return {
       token: accessToken,
-      role: data.role || payload?.role || payload?.userType,
-      user: payload
-        ? {
-          id: payload.userId || payload.user_id || null,
-          role: payload.role || data.role,
-          userType: payload.userType || data.userType,
-          email: data.user?.email || payload.email || payload.sub || '',
-          first_name: data.user?.first_name || payload.first_name || 'User',
-          last_name: data.user?.last_name || payload.last_name || '',
-        }
-        : null,
+      role: data.role,
+      userType: data.userType,
     };
-    if (import.meta.env.DEV) console.debug('[auth] login parsed result', result);
-    return result;
   },
 
   logout: async (): Promise<void> => {
     await apiClient.post('/login/logout');
   },
 
-  // Try to refresh access token using cookie; return decoded payload
-  getCurrentUser: async () => {
+  // Fetch the real user profile using the access token
+  fetchProfile: async () => {
     try {
-      // The backend /refresh endpoint returns { accessToken: string }
-      // It relies on the httpOnly cookie 'refreshToken'
-      const resp = await apiClient.post('/login/refresh');
-      if (import.meta.env.DEV) console.debug('[auth] refresh response', resp.data);
-
-      const accessToken: string = resp.data.accessToken || resp.data.token;
-      const payload = accessToken ? decodeJwt(accessToken) : null;
-
-      const result = {
-        token: accessToken,
-        user: payload
-          ? {
-            id: payload.userId || payload.user_id || 0,
-            first_name: payload.first_name || 'User',
-            last_name: payload.last_name || '',
-            email: payload.email || payload.sub || '',
-            role: payload.role || payload.userType,
-          }
-          : null,
-      };
-      if (import.meta.env.DEV) console.debug('[auth] getCurrentUser parsed result', result);
-      return result;
+      const resp = await apiClient.get('/login/me');
+      if (import.meta.env.DEV) console.debug('[auth] profile response', resp.data);
+      return resp.data.user || null;
     } catch (error) {
-      if (import.meta.env.DEV) console.debug('[auth] refresh failed', error);
-      return { token: null, user: null };
+      if (import.meta.env.DEV) console.debug('[auth] fetchProfile failed', error);
+      return null;
     }
   },
 
-  refreshToken: async (): Promise<{ token: string }> => {
-    const response = await apiClient.post('/login/refresh');
-    return { token: response.data.accessToken || response.data.token };
+  // Refresh access token using the httpOnly cookie
+  refreshToken: async (): Promise<{ token: string | null }> => {
+    try {
+      const resp = await apiClient.post('/login/refresh');
+      if (import.meta.env.DEV) console.debug('[auth] refresh response', resp.data);
+      const accessToken: string = resp.data.accessToken || resp.data.token;
+      return { token: accessToken || null };
+    } catch (error) {
+      if (import.meta.env.DEV) console.debug('[auth] refresh failed', error);
+      return { token: null };
+    }
+  },
+
+  // Combined: try to refresh token + fetch profile (used on page load)
+  getCurrentUser: async () => {
+    try {
+      // Step 1: Refresh the access token via cookie
+      const refreshResp = await apiClient.post('/login/refresh');
+      const accessToken: string = refreshResp.data.accessToken || refreshResp.data.token;
+
+      if (!accessToken) {
+        return { token: null, user: null };
+      }
+
+      // Store new token so the next request uses it
+      localStorage.setItem('token', accessToken);
+
+      // Step 2: Fetch real profile from /login/me
+      const profileResp = await apiClient.get('/login/me');
+      const user = profileResp.data.user || null;
+
+      return { token: accessToken, user };
+    } catch (error) {
+      if (import.meta.env.DEV) console.debug('[auth] getCurrentUser failed', error);
+      return { token: null, user: null };
+    }
   },
 };

@@ -1,23 +1,22 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useTheme } from '@/context/ThemeContext';
-import { Link } from 'react-router-dom';
 import { Link as LinkIcon, ExternalLink } from 'lucide-react';
 
 interface EssentialLinksSectionProps {
+    links?: {
+        link_id: number;
+        title: string;
+        url: string;
+    }[];
     canManage?: boolean;
-    addedBy?: string;
 }
 
-export const EssentialLinksSection: React.FC<EssentialLinksSectionProps> = ({ canManage = false }) => {
+export const EssentialLinksSection: React.FC<EssentialLinksSectionProps> = ({
+    links = [],
+    canManage = false
+}) => {
     const { theme } = useTheme();
-
-    // Mock links for now
-    const links = [
-        { title: 'University Website', url: '#' },
-        { title: 'Exam Portal', url: '#' },
-        { title: 'Library Catalog', url: '#' },
-    ];
 
     return (
         <Card className="border-0 shadow-lg overflow-hidden" style={{ background: theme.surface }}>
@@ -33,21 +32,31 @@ export const EssentialLinksSection: React.FC<EssentialLinksSectionProps> = ({ ca
             </CardHeader>
             <CardContent>
                 <div className="space-y-3">
-                    {links.map((link, index) => (
-                        <a
-                            key={index}
-                            href={link.url}
-                            className="flex items-center justify-between p-3 rounded-lg border transition-all hover:bg-black/5"
-                            style={{ borderColor: theme.border, color: theme.text }}
-                        >
-                            <span className="font-medium">{link.title}</span>
-                            <ExternalLink className="w-4 h-4" style={{ color: theme.textMuted }} />
-                        </a>
-                    ))}
+                    {links && links.length > 0 ? (
+                        links.map((link) => (
+                            <a
+                                key={link.link_id}
+                                href={link.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center justify-between p-3 rounded-lg border transition-all hover:bg-black/5"
+                                style={{ borderColor: theme.border, color: theme.text }}
+                            >
+                                <span className="font-medium">{link.title}</span>
+                                <ExternalLink className="w-4 h-4" style={{ color: theme.textMuted }} />
+                            </a>
+                        ))
+                    ) : (
+                        <div className="text-center py-6 text-sm" style={{ color: theme.textMuted }}>
+                            No essential links available.
+                        </div>
+                    )}
                     {canManage && (
-                        <button className="w-full py-2 text-sm text-center border border-dashed rounded-lg" style={{ borderColor: theme.border, color: theme.textMuted }}>
-                            + Add Link
-                        </button>
+                        <div className="mt-4 p-4 border-2 border-dashed rounded-xl text-center" style={{ borderColor: theme.border }}>
+                            <p className="text-xs" style={{ color: theme.textMuted }}>
+                                Manage these links via the Admin dashboard
+                            </p>
+                        </div>
                     )}
                 </div>
             </CardContent>

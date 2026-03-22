@@ -9,9 +9,106 @@ const router = express.Router();
 
 
 //course progress tracking
-//notice
 
+// ========================
+// NOTICES
+// ========================
 
+// Create a notice (faculty — scoped to their department)
+router.post(
+  "/notices",
+  authenticate,
+  authorize("faculty"),
+  async (req, res) => {
+    const { title, message, department_id, year, target_audience } = req.body;
+    const teacher_id = req.user.userId;
+
+    if (!title || !message) {
+      return res.status(400).json({ message: "title and message are required" });
+    }
+
+    try {
+      // Get the teacher's department (used as fallback)
+      const [teacher] = await pool.execute(
+        `SELECT department_id FROM teachers WHERE teacher_id = ?`,
+        [teacher_id]
+      );
+
+      if (teacher.length === 0) {
+        return res.status(404).json({ message: "Teacher not found" });
+      }
+
+      const [result] = await pool.execute(
+        `INSERT INTO notices (title, message, posted_by, posted_by_id, department_id, year, target_audience)
+         VALUES (?, ?, 'faculty', ?, ?, ?, ?)`,
+        [title.trim(), message.trim(), teacher_id,
+        department_id || teacher[0].department_id, year || null, target_audience || 'all']
+      );
+
+      const io = req.app.get('io');
+      if (io) {
+        io.emit('refresh_notices', { message: 'New notice from faculty' });
+      }
+
+      res.status(201).json({
+        message: "Notice posted",
+        notice_id: result.insertId,
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  }
+);
+
+// Get recent notices visible to this teacher (admin broadcasts + own department)
+router.get(
+  "/notices/recent",
+  authenticate,
+  authorize("faculty"),
+  async (req, res) => {
+    const teacher_id = req.user.userId;
+
+    try {
+      const [teacher] = await pool.execute(
+        `SELECT department_id FROM teachers WHERE teacher_id = ?`,
+        [teacher_id]
+      );
+
+      if (teacher.length === 0) {
+        return res.status(404).json({ message: "Teacher not found" });
+      }
+
+      const dept_id = teacher[0].department_id;
+
+      const [notices] = await pool.execute(
+        `SELECT 
+            n.notice_id,
+            n.title,
+            n.message,
+            n.posted_by,
+            CONCAT(t.first_name, ' ', t.last_name) AS posted_by_name,
+            n.posted_at,
+            n.department_id,
+            n.year,
+            n.target_audience
+         FROM notices n
+         JOIN teachers t ON n.posted_by_id = t.teacher_id
+         WHERE n.posted_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+           AND (n.department_id IS NULL OR n.department_id = ?)
+           AND n.target_audience IN ('all', 'teachers')
+         ORDER BY n.posted_at DESC
+         LIMIT 10`,
+        [dept_id]
+      );
+
+      res.json({ notices });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  }
+);
 
 
 
@@ -121,6 +218,11 @@ router.get(
       const totalPresent = attendanceStats[0].total_present;
       const avgAttendance = totalRecords > 0 ? ((totalPresent / totalRecords) * 100).toFixed(1) : 0;
 
+      // Essential links
+      const [essentialLinksData] = await pool.execute(
+        `SELECT link_id, title, url FROM essential_links ORDER BY link_id DESC`
+      );
+
       res.json({
         profile: rows[0],
         teaches: teaches,
@@ -129,7 +231,8 @@ router.get(
           total_students: studentCount[0].total_students || 0,
           classes_per_week: timetableCount[0].unique_slots || 0,
           avg_attendance: avgAttendance
-        }
+        },
+        essential_links: essentialLinksData
       });
 
     } catch (error) {

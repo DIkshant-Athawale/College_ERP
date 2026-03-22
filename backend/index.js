@@ -9,34 +9,70 @@ import cookieParser from "cookie-parser"
 import cors from "cors"
 
 
-async function startServer()
-{
-    
+import { createServer } from 'http';
+import { Server } from 'socket.io';
+
+async function startServer() {
+
     const app = express()
+    const server = createServer(app);
+    const io = new Server(server, {
+        cors: {
+            origin: true, // or your frontend url
+            credentials: true,
+            methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+        }
+    });
+
+    io.on('connection', (socket) => {
+        console.log('Client connected:', socket.id);
+        socket.on('disconnect', () => {
+            console.log('Client disconnected:', socket.id);
+        });
+    });
+
+    // Make io accessible in routes
+    app.set('io', io);
     app.use(express.json());
     app.use(cookieParser());
     app.use(cors({
         origin: true,
         credentials: true
-      }));
-      
+    }));
 
-    app.get('/',(req,res)=>{
+    // Global Socket Emitter for DB Changes
+    app.use((req, res, next) => {
+        if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
+            // Wait for the response to complete
+            res.on('finish', () => {
+                // Determine if it was successful
+                if (res.statusCode >= 200 && res.statusCode < 300) {
+                    const socketIo = req.app.get('io');
+                    if (socketIo) {
+                        socketIo.emit('db_change', { method: req.method, path: req.path });
+                    }
+                }
+            });
+        }
+        next();
+    });
+
+    app.get('/', (req, res) => {
         res.send("Server is ready")
     })
 
-    
+
 
     //routes 
-    app.use("/login" , loginRouter)
-    app.use("/student" , studentRouter)
-    app.use("/admin" , adminRouter)
+    app.use("/login", loginRouter)
+    app.use("/student", studentRouter)
+    app.use("/admin", adminRouter)
     app.use("/teacher", teacherRouter)
-    
 
-    
+
+
     const port = process.env.PORT || 3000
-    app.listen(port,()=>{
+    server.listen(port, () => {
         console.log(`Server at http://localhost:${port}`)
     })
 

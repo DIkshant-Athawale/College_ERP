@@ -4,6 +4,7 @@ import { useCourses, useDepartments, useTeachers } from '@/hooks';
 import { DataTable, Modal, FormInput, ConfirmDialog, FormSelect } from '@/components/common';
 import { Button } from '@/components/ui/button';
 import { Plus, Pencil, Trash2, BookOpen } from 'lucide-react';
+import { useSocket } from '@/context/SocketContext';
 import { validateCourseForm } from '@/utils/validation';
 import type { Course, CreateCourseRequest } from '@/types';
 
@@ -66,6 +67,23 @@ export const ManageCourses: React.FC = () => {
       semester: filters.semester || undefined,
     });
   }, [filters]);
+
+  const { socket } = useSocket();
+
+  useEffect(() => {
+    if (!socket) return;
+    const handleDbChange = () => {
+      fetchFilteredCourses({
+        department_id: filters.department_id || undefined,
+        year: filters.year || undefined,
+        semester: filters.semester || undefined,
+      });
+    };
+    socket.on('db_change', handleDbChange);
+    return () => {
+      socket.off('db_change', handleDbChange);
+    };
+  }, [socket, filters]);
 
   const departmentOptions = departments.map((d) => ({
     value: String(d.department_id),

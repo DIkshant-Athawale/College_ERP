@@ -4,13 +4,26 @@ import { useDepartments } from '@/hooks';
 import { DataTable, Modal, FormInput, ConfirmDialog } from '@/components/common';
 import { Button } from '@/components/ui/button';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { useSocket } from '@/context/SocketContext';
 import { validateDepartmentForm } from '@/utils/validation';
 import type { Department } from '@/types';
 
 export const ManageDepartments: React.FC = () => {
   const { theme } = useTheme();
-  const { departments, isLoading, createDepartment, editDepartment, deleteDepartment } = useDepartments();
-  
+  const { departments, isLoading, createDepartment, editDepartment, deleteDepartment, refetch } = useDepartments();
+  const { socket } = useSocket();
+
+  React.useEffect(() => {
+    if (!socket) return;
+    const handleDbChange = () => {
+      refetch();
+    };
+    socket.on('db_change', handleDbChange);
+    return () => {
+      socket.off('db_change', handleDbChange);
+    };
+  }, [socket, refetch]);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
@@ -45,7 +58,7 @@ export const ManageDepartments: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const validationErrors = validateDepartmentForm(formData);
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
@@ -53,7 +66,7 @@ export const ManageDepartments: React.FC = () => {
     }
 
     setIsSubmitting(true);
-    
+
     let success;
     if (selectedDepartment) {
       success = await editDepartment(selectedDepartment.department_id, formData);
@@ -69,11 +82,11 @@ export const ManageDepartments: React.FC = () => {
 
   const handleConfirmDelete = async () => {
     if (!selectedDepartment) return;
-    
+
     setIsSubmitting(true);
     const success = await deleteDepartment(selectedDepartment.department_id);
     setIsSubmitting(false);
-    
+
     if (success) {
       setIsConfirmOpen(false);
       setSelectedDepartment(null);

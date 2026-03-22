@@ -154,6 +154,32 @@ router.get("/dashboard", authenticate, authorize("student"), async (req, res) =>
     );
 
 
+    // Notices — admin broadcasts + faculty notices for student's department
+    const [noticesData] = await pool.execute(
+      `SELECT 
+          n.notice_id,
+          n.title,
+          n.message,
+          n.posted_by,
+          CONCAT(t.first_name, ' ', t.last_name) AS posted_by_name,
+          n.posted_at
+       FROM notices n
+       JOIN teachers t ON n.posted_by_id = t.teacher_id
+       WHERE n.posted_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+         AND (n.department_id IS NULL OR n.department_id = ?)
+         AND n.target_audience IN ('all', 'students')
+         AND (n.year IS NULL OR n.year = ?)
+       ORDER BY n.posted_at DESC
+       LIMIT 10`,
+      [department_id, profile.year]
+    );
+
+
+    // Essential links
+    const [essentialLinksData] = await pool.execute(
+      `SELECT link_id, title, url FROM essential_links ORDER BY link_id DESC`
+    );
+
     res.json({
       profile,
       subjects,
@@ -161,8 +187,10 @@ router.get("/dashboard", authenticate, authorize("student"), async (req, res) =>
       overall_attendance: overallSummary,
       feeRecord,
       timetablerows: timetable,
+      notices: noticesData,
       assignments: assignmentsData,
-      tests: testsData
+      tests: testsData,
+      essential_links: essentialLinksData
     });
 
   } catch (error) {
@@ -171,6 +199,54 @@ router.get("/dashboard", authenticate, authorize("student"), async (req, res) =>
   }
 
 });
+
+// Recent notices for the student's department (standalone endpoint)
+router.get(
+  "/notices/recent",
+  authenticate,
+  authorize("student"),
+  async (req, res) => {
+    const student_id = req.user.userId;
+
+    try {
+      const [student_profile] = await pool.execute(
+        `SELECT department_id, year FROM students WHERE student_id = ?`,
+        [student_id]
+      );
+
+      if (student_profile.length === 0) {
+        return res.status(404).json({ message: "Student not found" });
+      }
+
+      const dept_id = student_profile[0].department_id;
+      const student_year = student_profile[0].year;
+
+      const [notices] = await pool.execute(
+        `SELECT 
+            n.notice_id,
+            n.title,
+            n.message,
+            n.posted_by,
+            CONCAT(t.first_name, ' ', t.last_name) AS posted_by_name,
+            n.posted_at
+         FROM notices n
+         JOIN teachers t ON n.posted_by_id = t.teacher_id
+         WHERE n.posted_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+           AND (n.department_id IS NULL OR n.department_id = ?)
+           AND n.target_audience IN ('all', 'students')
+           AND (n.year IS NULL OR n.year = ?)
+         ORDER BY n.posted_at DESC
+         LIMIT 10`,
+        [dept_id, student_year]
+      );
+
+      res.json({ notices });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  }
+);
 
 
 export default router
