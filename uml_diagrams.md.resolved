@@ -1,0 +1,550 @@
+# College ERP — UML Diagrams
+
+All diagrams generated from analysis of both `College_ERP/backend` and `frontend/app`.
+
+---
+
+## 1. ER / Class Diagram — Database Schema
+
+```mermaid
+classDiagram
+    direction LR
+
+    class department {
+        +int department_id PK
+        +varchar department_code UK
+        +varchar department_name UK
+    }
+
+    class teachers {
+        +int teacher_id PK
+        +varchar first_name
+        +varchar last_name
+        +varchar email UK
+        +varchar password
+        +enum role : admin | faculty
+        +varchar primary_phone
+        +varchar alternate_phone
+        +int department_id FK
+        +varchar designation
+    }
+
+    class students {
+        +int student_id PK
+        +varchar first_name
+        +varchar middle_name
+        +varchar last_name
+        +date DOB
+        +varchar email UK
+        +varchar password
+        +varchar primary_phone
+        +varchar alternate_phone
+        +int department_id FK
+        +int year
+        +int semester
+        +varchar academic_year
+        +enum status : active | dc | graduated
+    }
+
+    class courses {
+        +int course_id PK
+        +varchar course_code UK
+        +varchar course_name
+        +int department_id FK
+        +int year
+        +int semester
+        +int teacher_id FK
+    }
+
+    class enrollments {
+        +int enrollment_id PK
+        +int student_id FK
+        +int course_id FK
+        +varchar academic_year
+    }
+
+    class timetable {
+        +int timetable_id PK
+        +int department_id FK
+        +int semester
+        +enum day
+        +int slot_id FK
+        +int course_id FK
+    }
+
+    class time_slots {
+        +int slot_id PK
+        +time start_time UK
+        +time end_time
+    }
+
+    class attendance_sessions {
+        +int session_id PK
+        +int course_id FK
+        +date session_date
+        +int created_by FK
+        +varchar academic_year
+    }
+
+    class attendance_records {
+        +int record_id PK
+        +int session_id FK
+        +int student_id FK
+        +enum status : present | absent
+    }
+
+    class student_fees {
+        +int fee_id PK
+        +int student_id FK
+        +varchar academic_year
+        +decimal total_fee
+        +decimal paid_amount
+    }
+
+    class refresh_tokens {
+        +int id PK
+        +int user_id
+        +enum user_type : student | faculty
+        +varchar role
+        +text token
+        +datetime expires_at
+    }
+
+    department "1" --> "*" teachers : has
+    department "1" --> "*" students : has
+    department "1" --> "*" courses : offers
+    department "1" --> "*" timetable : schedules
+    teachers "1" --> "*" courses : teaches
+    teachers "1" --> "*" attendance_sessions : creates
+    students "1" --> "*" enrollments : enrolled_in
+    courses "1" --> "*" enrollments : has
+    courses "1" --> "*" timetable : scheduled_in
+    courses "1" --> "*" attendance_sessions : has
+    time_slots "1" --> "*" timetable : used_by
+    attendance_sessions "1" --> "*" attendance_records : contains
+    students "1" --> "*" attendance_records : has
+    students "1" --> "*" student_fees : pays
+```
+
+---
+
+## 2. Component Diagram — System Architecture
+
+```mermaid
+graph TB
+    subgraph Client["🖥️ Client Browser"]
+        subgraph ReactApp["React SPA (Vite + TypeScript)"]
+            Router["AppRoutes<br/>(react-router-dom)"]
+            
+            subgraph Pages["Pages"]
+                Login["Login"]
+                AdminDash["AdminDashboard"]
+                StudentDash["StudentDashboard"]
+                FacultyDash["FacultyDashboard"]
+                NotFound["NotFound / Unauthorized"]
+            end
+
+            subgraph Components["Components"]
+                Navbar["Navbar"]
+                ProtectedRoute["ProtectedRoute"]
+                ThemeSwitcher["ThemeSwitcher"]
+                ErrorBoundary["ErrorBoundary"]
+                
+                subgraph StudentComps["Student Components"]
+                    SPC["StudentProfileCard"]
+                    SubjCard["SubjectsCard"]
+                    FeeCard["FeeCard"]
+                    AttBar["AttendanceBarSection"]
+                    TTTable["TimetableTable"]
+                end
+                
+                subgraph FacultyComps["Faculty Components"]
+                    FPC["FacultyProfileCard"]
+                    FCC["FacultyCoursesCard"]
+                    FTT["FacultyTimetableTable"]
+                end
+            end
+
+            subgraph Contexts["Contexts"]
+                AuthCtx["AuthContext<br/>(login/logout/refresh)"]
+                ThemeCtx["ThemeContext<br/>(dark/light)"]
+            end
+
+            subgraph APILayer["API Layer (Axios)"]
+                AxiosInst["axios.ts<br/>(interceptors + refresh)"]
+                AuthAPI["auth.ts"]
+                StudentAPI["student.ts"]
+                FacultyAPI["faculty.ts"]
+                AdminAPIs["courses.ts | departments.ts<br/>teachers.ts | students.ts<br/>timetable.ts | statistics.ts"]
+            end
+        end
+        LocalStorage["LocalStorage<br/>(JWT access token)"]
+    end
+
+    subgraph Backend["⚙️ Backend Server (Express, port 3000)"]
+        ExpressApp["Express App<br/>(index.js)"]
+        
+        subgraph Middleware["Middleware"]
+            AuthMW["authenticate<br/>(JWT verify)"]
+            AuthzMW["authorize<br/>(role check)"]
+        end
+        
+        subgraph Routes["Route Handlers"]
+            AuthRoute["/login<br/>auth.js"]
+            AdminRoute["/admin<br/>admin.js"]
+            StudentRoute["/student<br/>student.js"]
+            TeacherRoute["/teacher<br/>teacher.js"]
+        end
+    end
+
+    subgraph Database["🗄️ MySQL (clg_db)"]
+        Tables["11 Tables<br/>(see ER Diagram)"]
+    end
+
+    Router --> Pages
+    Pages --> Components
+    Pages --> Contexts
+    Contexts --> APILayer
+    APILayer --> LocalStorage
+    APILayer -- "HTTP/REST + Cookie" --> ExpressApp
+    ExpressApp --> Middleware
+    Middleware --> Routes
+    Routes -- "mysql2/promise<br/>pool (limit:10)" --> Tables
+```
+
+---
+
+## 3. Sequence Diagrams
+
+### 3a. Login Flow
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant LP as Login Page
+    participant AC as AuthContext
+    participant AX as Axios API
+    participant BE as Backend (auth.js)
+    participant DB as MySQL
+
+    User->>LP: Enter email + password
+    LP->>AC: login({ email, password })
+    AC->>AX: POST /login
+    AX->>BE: { email, password }
+    
+    BE->>DB: SELECT FROM teachers WHERE email = ?
+    alt Teacher found
+        DB-->>BE: teacher row
+        BE->>BE: bcrypt.compare(password, hash)
+    else Not in teachers
+        BE->>DB: SELECT FROM students WHERE email = ?
+        DB-->>BE: student row
+        BE->>BE: bcrypt.compare(password, hash)
+    end
+
+    alt Password matches
+        BE->>BE: Generate accessToken (JWT, 30min)
+        BE->>BE: Generate refreshToken (JWT, 7 days)
+        BE->>DB: DELETE old refresh_tokens for user
+        BE->>DB: INSERT new refresh_token
+        BE-->>AX: { accessToken, role, userType } + Set-Cookie(refreshToken)
+        AX-->>AC: response
+        AC->>AC: localStorage.setItem(token)
+        AC->>AC: setUser(state)
+        AC-->>LP: success
+        LP->>LP: Navigate to role-based dashboard
+    else Password invalid
+        BE-->>AX: 401 Invalid credentials
+        AX-->>AC: error
+        AC-->>LP: toast error
+    end
+```
+
+### 3b. Token Refresh Flow
+
+```mermaid
+sequenceDiagram
+    participant AX as Axios Interceptor
+    participant BE as Backend (auth.js)
+    participant DB as MySQL
+
+    AX->>AX: Original request gets 401
+    AX->>BE: POST /login/refresh (cookie: refreshToken)
+    BE->>BE: jwt.verify(refreshToken)
+    BE->>DB: SELECT FROM refresh_tokens WHERE token = ? AND expires_at > NOW()
+    
+    alt Valid token
+        DB-->>BE: session row
+        BE->>BE: Verify decoded.userId == session.user_id
+        BE->>BE: Sign new accessToken (30min)
+        BE-->>AX: { accessToken }
+        AX->>AX: Update localStorage
+        AX->>AX: Retry original request
+    else Invalid/Expired
+        BE-->>AX: 401
+        AX->>AX: Redirect to /login
+    end
+```
+
+### 3c. Admin Creates Student
+
+```mermaid
+sequenceDiagram
+    actor Admin
+    participant FE as AdminDashboard
+    participant API as API Layer
+    participant BE as Backend (admin.js)
+    participant DB as MySQL
+
+    Admin->>FE: Fill student creation form
+    FE->>API: POST /admin/create_student
+    API->>BE: { first_name, last_name, email, password, department_id, year, semester, academic_year, ... }
+    
+    BE->>BE: Validate fields + year/semester rules
+    BE->>BE: bcrypt.hash(password, 10)
+    BE->>DB: BEGIN TRANSACTION
+    BE->>DB: INSERT INTO students (...)
+    DB-->>BE: student_id (insertId)
+    BE->>DB: INSERT INTO student_fees (student_id, academic_year, total_fee=85000)
+    BE->>DB: SELECT course_id FROM courses WHERE dept=? AND semester=?
+    DB-->>BE: matching courses[]
+    
+    loop Each course
+        BE->>DB: INSERT INTO enrollments (student_id, course_id, academic_year)
+    end
+    
+    BE->>DB: COMMIT
+    BE-->>API: 201 { message, student_id }
+    API-->>FE: success
+    FE->>Admin: Toast "Student created"
+```
+
+### 3d. Faculty Takes Attendance
+
+```mermaid
+sequenceDiagram
+    actor Faculty
+    participant FE as FacultyDashboard
+    participant API as API Layer
+    participant BE as Backend (teacher.js)
+    participant DB as MySQL
+
+    Faculty->>FE: Select course + date
+    FE->>API: POST /teacher/attendance/session
+    API->>BE: { course_id, session_date }
+    BE->>DB: Verify teacher owns course
+    BE->>DB: Get academic_year from enrollments
+    BE->>DB: INSERT INTO attendance_sessions
+    DB-->>BE: session_id
+    BE-->>FE: { session_id }
+
+    FE->>API: GET /teacher/attendance/session/:session_id/students
+    API->>BE: request
+    BE->>DB: SELECT active enrolled students
+    DB-->>BE: students[]
+    BE-->>FE: { students }
+
+    Faculty->>FE: Mark each student present/absent
+    FE->>API: POST /teacher/attendance/submit
+    API->>BE: { session_id, attendance[] }
+    BE->>DB: BEGIN TRANSACTION
+    BE->>DB: INSERT INTO attendance_records (batch)
+    BE->>DB: COMMIT
+    BE-->>FE: "Attendance submitted successfully"
+```
+
+### 3e. Student Dashboard Load
+
+```mermaid
+sequenceDiagram
+    actor Student
+    participant FE as StudentDashboard
+    participant API as API Layer
+    participant BE as Backend (student.js)
+    participant DB as MySQL
+
+    Student->>FE: Navigate to dashboard
+    FE->>API: GET /student/dashboard
+    API->>BE: Authorization: Bearer <token>
+    BE->>BE: authenticate + authorize("student")
+    
+    par Parallel DB Queries
+        BE->>DB: SELECT profile FROM students
+        BE->>DB: SELECT enrolled subjects (JOIN enrollments + courses)
+        BE->>DB: SELECT subject-wise attendance (JOIN attendance_sessions + records)
+        BE->>DB: SELECT overall attendance
+        BE->>DB: SELECT fee record FROM student_fees
+        BE->>DB: SELECT timetable (JOIN timetable + time_slots + courses + teachers)
+    end
+
+    DB-->>BE: All results
+    BE-->>API: { profile, subjects, attendance_by_subject, overall_attendance, feeRecord, timetablerows }
+    API-->>FE: dashboard data
+    
+    FE->>FE: Render ProfileCard
+    FE->>FE: Render SubjectsCard
+    FE->>FE: Render AttendanceBarSection
+    FE->>FE: Render FeeCard
+    FE->>FE: Render TimetableTable
+```
+
+---
+
+## 4. Use Case Diagram
+
+```mermaid
+graph TB
+    subgraph System["College ERP System"]
+        subgraph AdminUC["Admin Use Cases"]
+            A1["View Dashboard Stats"]
+            A2["Create Department"]
+            A3["Edit Department"]
+            A4["Create Teacher"]
+            A5["Edit Teacher"]
+            A6["Delete Teacher"]
+            A7["Create Student"]
+            A8["Edit Student"]
+            A9["Delete Student"]
+            A10["Create Course"]
+            A11["Edit Course"]
+            A12["Delete Course"]
+            A13["Manage Timetable"]
+            A14["Manage Time Slots"]
+            A15["Promote Students"]
+            A16["Mark Student DC"]
+            A17["Re-enroll DC Student"]
+            A18["View DC Students"]
+        end
+
+        subgraph FacultyUC["Faculty Use Cases"]
+            F1["View Dashboard"]
+            F2["View Assigned Courses"]
+            F3["View Entire Timetable"]
+            F4["View Attendance Summary"]
+            F5["View Student Attendance Detail"]
+            F6["Create Attendance Session"]
+            F7["View Session Students"]
+            F8["Submit Attendance"]
+        end
+
+        subgraph StudentUC["Student Use Cases"]
+            S1["Login"]
+            S2["View Profile"]
+            S3["View Enrolled Subjects"]
+            S4["View Attendance"]
+            S5["View Fee Status"]
+            S6["View Timetable"]
+        end
+
+        subgraph SharedUC["Shared Use Cases"]
+            SH1["Login / Authenticate"]
+            SH2["Token Refresh"]
+            SH3["Logout"]
+        end
+    end
+
+    Admin(("👤 Admin"))
+    Faculty(("👤 Faculty"))
+    StudentActor(("👤 Student"))
+
+    Admin --- A1 & A2 & A3 & A4 & A5 & A6
+    Admin --- A7 & A8 & A9 & A10 & A11 & A12
+    Admin --- A13 & A14 & A15 & A16 & A17 & A18
+    Admin --- SH1 & SH2 & SH3
+
+    Faculty --- F1 & F2 & F3 & F4
+    Faculty --- F5 & F6 & F7 & F8
+    Faculty --- SH1 & SH2 & SH3
+
+    StudentActor --- S1 & S2 & S3
+    StudentActor --- S4 & S5 & S6
+    StudentActor --- SH1 & SH2 & SH3
+```
+
+---
+
+## 5. Deployment Diagram
+
+```mermaid
+graph TB
+    subgraph ClientTier["Client Tier"]
+        Browser["🌐 Web Browser"]
+        subgraph SPA["React SPA"]
+            Vite["Vite Dev Server :5173"]
+            ReactDOM["React 18 + Router v6"]
+            AxiosClient["Axios HTTP Client"]
+            LS["LocalStorage (JWT)"]
+            Cookie["HttpOnly Cookie (refreshToken)"]
+        end
+    end
+
+    subgraph ServerTier["Server Tier"]
+        subgraph NodeServer["Node.js Runtime"]
+            Express["Express.js :3000"]
+            JWT["jsonwebtoken"]
+            Bcrypt["bcrypt"]
+            CookieParser["cookie-parser"]
+            CORS["cors middleware"]
+        end
+    end
+
+    subgraph DataTier["Data Tier"]
+        MySQL["MySQL Server (localhost)"]
+        subgraph Schema["Database: clg_db"]
+            T1["department"]
+            T2["teachers"]
+            T3["students"]
+            T4["courses"]
+            T5["enrollments"]
+            T6["timetable"]
+            T7["time_slots"]
+            T8["attendance_sessions"]
+            T9["attendance_records"]
+            T10["student_fees"]
+            T11["refresh_tokens"]
+        end
+    end
+
+    Browser --> SPA
+    AxiosClient -- "REST API (JSON)<br/>Bearer Token + Cookie" --> Express
+    Express -- "mysql2/promise<br/>Connection Pool (10)" --> MySQL
+    MySQL --> Schema
+```
+
+---
+
+## 6. Activity Diagram — Student Promotion
+
+```mermaid
+flowchart TD
+    Start([Start]) --> Input["Admin selects:<br/>department_id, current_semester,<br/>new_academic_year"]
+    Input --> Fetch["Fetch all active students<br/>in dept + semester"]
+    Fetch --> BeginTx["BEGIN TRANSACTION"]
+    BeginTx --> Loop{"For each student"}
+    
+    Loop --> Check{"semester == 8?"}
+    
+    Check -- Yes --> Graduate["UPDATE status = 'graduated'"]
+    Graduate --> Next["Next student"]
+    
+    Check -- No --> CalcNew["newSemester = current + 1<br/>newYear = ceil(newSem / 2)"]
+    CalcNew --> UpdateStudent["UPDATE student:<br/>semester, year, academic_year"]
+    UpdateStudent --> GetCourses["SELECT courses for<br/>new semester + dept"]
+    GetCourses --> HasCourses{"Courses found?"}
+    
+    HasCourses -- Yes --> Enroll["INSERT enrollments<br/>for each course"]
+    Enroll --> CreateFee["INSERT student_fees<br/>(total_fee = 85000)"]
+    CreateFee --> Next
+    
+    HasCourses -- No --> CreateFee
+    
+    Next --> Loop
+    Loop -- All done --> Commit["COMMIT TRANSACTION"]
+    Commit --> Response["Return success message"]
+    Response --> End([End])
+```
+
+---
+
+> All diagrams use **Mermaid** syntax and can be rendered in GitHub, VS Code (with Mermaid extension), or any Mermaid-compatible viewer.
+// [MermaidChart: 50666f6e-cb7f-44e8-9117-7f9dd3b6d2e4]

@@ -1,0 +1,486 @@
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+teachers =[
+  {
+    "first_name": "Raut",
+    "last_name": "Sir",
+    "email": "raut.hod@college.edu",
+    "password": "Password@123",
+    "role": "admin",
+    "primary_phone": "9000000001",
+    "alternate_phone": null,
+    "department_id": 1,
+    "designation": "HOD"
+  },
+  {
+    "first_name": "Kaware",
+    "last_name": "Sir",
+    "email": "kaware@college.edu",
+    "password": "Password@123",
+    "role": "faculty",
+    "primary_phone": "9000000002",
+    "alternate_phone": null,
+    "department_id": 1,
+    "designation": "Assistant Professor"
+  },
+  {
+    "first_name": "Rochlani",
+    "last_name": "Sir",
+    "email": "rochlani@college.edu",
+    "password": "Password@123",
+    "role": "faculty",
+    "primary_phone": "9000000003",
+    "alternate_phone": null,
+    "department_id": 1,
+    "designation": "Assistant Professor"
+  },
+  {
+    "first_name": "Rathod",
+    "last_name": "Sir",
+    "email": "rathod@college.edu",
+    "password": "Password@123",
+    "role": "faculty",
+    "primary_phone": "9000000004",
+    "alternate_phone": null,
+    "department_id": 1,
+    "designation": "Assistant Professor"
+  },
+  {
+    "first_name": "Khare",
+    "last_name": "Sir",
+    "email": "khare@college.edu",
+    "password": "Password@123",
+    "role": "faculty",
+    "primary_phone": "9000000005",
+    "alternate_phone": null,
+    "department_id": 1,
+    "designation": "Assistant Professor"
+  },
+  {
+    "first_name": "Deshmukh",
+    "last_name": "Sir",
+    "email": "deshmukh@college.edu",
+    "password": "Password@123",
+    "role": "faculty",
+    "primary_phone": "9000000006",
+    "alternate_phone": null,
+    "department_id": 1,
+    "designation": "Assistant Professor"
+  },
+  {
+    "first_name": "Ramteke",
+    "last_name": "Sir",
+    "email": "ramteke@college.edu",
+    "password": "Password@123",
+    "role": "faculty",
+    "primary_phone": "9000000007",
+    "alternate_phone": null,
+    "department_id": 1,
+    "designation": "Assistant Professor"
+  },
+  {
+    "first_name": "Bagde",
+    "last_name": "Sir",
+    "email": "bagde@college.edu",
+    "password": "Password@123",
+    "role": "faculty",
+    "primary_phone": "9000000008",
+    "alternate_phone": null,
+    "department_id": 1,
+    "designation": "Assistant Professor"
+  },
+  {
+    "first_name": "Chapke",
+    "last_name": "Sir",
+    "email": "chapke@college.edu",
+    "password": "Password@123",
+    "role": "faculty",
+    "primary_phone": "9000000009",
+    "alternate_phone": null,
+    "department_id": 1,
+    "designation": "Assistant Professor"
+  },
+  {
+    "first_name": "Pattewar",
+    "last_name": "Sir",
+    "email": "pattewar@college.edu",
+    "password": "Password@123",
+    "role": "faculty",
+    "primary_phone": "9000000010",
+    "alternate_phone": null,
+    "department_id": 1,
+    "designation": "Assistant Professor"
+  },
+  {
+    "first_name": "Borgaokar",
+    "last_name": "Sir",
+    "email": "borgaokar@college.edu",
+    "password": "Password@123",
+    "role": "faculty",
+    "primary_phone": "9000000011",
+    "alternate_phone": null,
+    "department_id": 1,
+    "designation": "Training Instructor"
+  },
+  {
+    "first_name": "Sanap",
+    "last_name": "Sir",
+    "email": "sanap@college.edu",
+    "password": "Password@123",
+    "role": "faculty",
+    "primary_phone": "9000000012",
+    "alternate_phone": null,
+    "department_id": 1,
+    "designation": "Assistant Professor"
+  },
+  {
+    "first_name": "Shekle",
+    "last_name": "Sir",
+    "email": "shekle@college.edu",
+    "password": "Password@123",
+    "role": "faculty",
+    "primary_phone": "9000000013",
+    "alternate_phone": null,
+    "department_id": 1,
+    "designation": "Assistant Professor"
+  },
+  {
+    "first_name": "Jaiswal",
+    "last_name": "Sir",
+    "email": "jaiswal@college.edu",
+    "password": "Password@123",
+    "role": "faculty",
+    "primary_phone": "9000000014",
+    "alternate_phone": null,
+    "department_id": 1,
+    "designation": "Assistant Professor"
+  }
+]
+
+
+
+//courses =[
+  {
+    "course_code": "DCN",
+    "course_name": "Data Communication & Networking",
+    "department_id": 1,
+    "year": 2,
+    "semester": 4,
+    "teacher_id": 2
+  },
+  {
+    "course_code": "OS",
+    "course_name": "Operating System",
+    "department_id": 1,
+    "year": 2,
+    "semester": 4,
+    "teacher_id": 3
+  },
+  {
+    "course_code": "TOC",
+    "course_name": "Theory of Computation",
+    "department_id": 1,
+    "year": 2,
+    "semester": 4,
+    "teacher_id": 4
+  },
+  {
+    "course_code": "MDM2",
+    "course_name": "Digital ICs and Applications",
+    "department_id": 1,
+    "year": 2,
+    "semester": 4,
+    "teacher_id": 5
+  },
+  {
+    "course_code": "CSKILL2",
+    "course_name": "Computing Skill II",
+    "department_id": 1,
+    "year": 2,
+    "semester": 4,
+    "teacher_id": 6
+  },
+  {
+    "course_code": "OE2",
+    "course_name": "Business Planning and Project Management",
+    "department_id": 1,
+    "year": 2,
+    "semester": 4,
+    "teacher_id": 6
+  },
+  {
+    "course_code": "SSEE",
+    "course_name": "Social Science and Engineering Economics",
+    "department_id": 1,
+    "year": 2,
+    "semester": 4,
+    "teacher_id": 4
+  },
+  {
+    "course_code": "MIL",
+    "course_name": "Modern Indian Language",
+    "department_id": 1,
+    "year": 2,
+    "semester": 4,
+    "teacher_id": 1
+  },
+  {
+    "course_code": "UHVE",
+    "course_name": "Universal Human Values & Ethics",
+    "department_id": 1,
+    "year": 2,
+    "semester": 4,
+    "teacher_id": 7
+  },
+  {
+    "course_code": "SPG",
+    "course_name": "Security Policy & Governance",
+    "department_id": 1,
+    "year": 3,
+    "semester": 6,
+    "teacher_id": 8
+  },
+  {
+    "course_code": "DAA",
+    "course_name": "Design & Analysis of Algorithms",
+    "department_id": 1,
+    "year": 3,
+    "semester": 6,
+    "teacher_id": 9
+  },
+  {
+    "course_code": "SE",
+    "course_name": "Software Engineering",
+    "department_id": 1,
+    "year": 3,
+    "semester": 6,
+    "teacher_id": 7
+  },
+  {
+    "course_code": "BDA",
+    "course_name": "Big Data Analytics",
+    "department_id": 1,
+    "year": 3,
+    "semester": 6,
+    "teacher_id": 13
+  },
+  {
+    "course_code": "CRYPTO",
+    "course_name": "Cryptography",
+    "department_id": 1,
+    "year": 3,
+    "semester": 6,
+    "teacher_id": 4
+  },
+  {
+    "course_code": "WC",
+    "course_name": "Wireless Communication",
+    "department_id": 1,
+    "year": 3,
+    "semester": 6,
+    "teacher_id": 10
+  },
+  {
+    "course_code": "SST",
+    "course_name": "Soft Skill Training",
+    "department_id": 1,
+    "year": 3,
+    "semester": 6,
+    "teacher_id": 11
+  },
+  {
+    "course_code": "OOAD",
+    "course_name": "Object Oriented Analysis & Design",
+    "department_id": 1,
+    "year": 4,
+    "semester": 8,
+    "teacher_id": 3
+  },
+  {
+    "course_code": "PEM",
+    "course_name": "Professional Ethics & Management",
+    "department_id": 1,
+    "year": 4,
+    "semester": 8,
+    "teacher_id": 14
+  },
+  {
+    "course_code": "MLAI",
+    "course_name": "Machine Learning & AI",
+    "department_id": 1,
+    "year": 4,
+    "semester": 8,
+    "teacher_id": 12
+  },
+  {
+    "course_code": "SSS",
+    "course_name": "System & Software Security",
+    "department_id": 1,
+    "year": 4,
+    "semester": 8,
+    "teacher_id": 8
+  },
+  {
+    "course_code": "DLT",
+    "course_name": "Distributed Ledger Technology",
+    "department_id": 1,
+    "year": 4,
+    "semester": 8,
+    "teacher_id": 9
+  }
+]
+
+
+
+
+
+
+
+
+
+students =[
+  {
+    "first_name": "Abhijeet",
+    "middle_name": "Sanjay",
+    "last_name": "Pinjarkar",
+    "DOB": "2003-05-14",
+    "year": 4,
+    "semester": 8,
+    "email": "abhijeet.pinjarkar@college.edu",
+    "primary_phone": "9001000001",
+    "alternate_phone": null,
+    "department_id": 1,
+    "password": "Password@123",
+    "academic_year": "2025-2026"
+  },
+  {
+    "first_name": "Bhuvansh",
+    "middle_name": "Deepak",
+    "last_name": "Hiwrekar",
+    "DOB": "2003-03-21",
+    "year": 4,
+    "semester": 8,
+    "email": "bhuvansh.hiwrekar@college.edu",
+    "primary_phone": "9001000002",
+    "alternate_phone": null,
+    "department_id": 1,
+    "password": "Password@123",
+    "academic_year": "2025-2026"
+  },
+  {
+    "first_name": "Manthan",
+    "middle_name": "Narendra",
+    "last_name": "Langote",
+    "DOB": "2002-12-10",
+    "year": 4,
+    "semester": 8,
+    "email": "manthan.langote@college.edu",
+    "primary_phone": "9001000003",
+    "alternate_phone": null,
+    "department_id": 1,
+    "password": "Password@123",
+    "academic_year": "2025-2026"
+  },
+  {
+    "first_name": "Prathamesh",
+    "middle_name": "Tulsidas",
+    "last_name": "Sande",
+    "DOB": "2003-01-18",
+    "year": 4,
+    "semester": 8,
+    "email": "prathamesh.sande@college.edu",
+    "primary_phone": "9001000004",
+    "alternate_phone": null,
+    "department_id": 1,
+    "password": "Password@123",
+    "academic_year": "2025-2026"
+  },
+  {
+    "first_name": "Saksham",
+    "middle_name": "P",
+    "last_name": "Gorade",
+    "DOB": "2003-07-09",
+    "year": 4,
+    "semester": 8,
+    "email": "saksham.gorade@college.edu",
+    "primary_phone": "9001000005",
+    "alternate_phone": null,
+    "department_id": 1,
+    "password": "Password@123",
+    "academic_year": "2025-2026"
+  },
+  {
+    "first_name": "Samruddhi",
+    "middle_name": "Jaybharat",
+    "last_name": "Kamble",
+    "DOB": "2003-02-11",
+    "year": 4,
+    "semester": 8,
+    "email": "samruddhi.kamble@college.edu",
+    "primary_phone": "9001000006",
+    "alternate_phone": null,
+    "department_id": 1,
+    "password": "Password@123",
+    "academic_year": "2025-2026"
+  },
+  {
+    "first_name": "Sumedh",
+    "middle_name": "Vinay",
+    "last_name": "Khobragade",
+    "DOB": "2002-11-29",
+    "year": 4,
+    "semester": 8,
+    "email": "sumedh.khobragade@college.edu",
+    "primary_phone": "9001000007",
+    "alternate_phone": null,
+    "department_id": 1,
+    "password": "Password@123",
+    "academic_year": "2025-2026"
+  },
+  {
+    "first_name": "Tejas",
+    "middle_name": "Rajendra",
+    "last_name": "Wath",
+    "DOB": "2003-04-02",
+    "year": 4,
+    "semester": 8,
+    "email": "tejas.wath@college.edu",
+    "primary_phone": "9001000008",
+    "alternate_phone": null,
+    "department_id": 1,
+    "password": "Password@123",
+    "academic_year": "2025-2026"
+  },
+  {
+    "first_name": "Shripad",
+    "middle_name": "Kailashrao",
+    "last_name": "Bhakare",
+    "DOB": "2002-09-15",
+    "year": 4,
+    "semester": 8,
+    "email": "shripad.bhakare@college.edu",
+    "primary_phone": "9001000009",
+    "alternate_phone": null,
+    "department_id": 1,
+    "password": "Password@123",
+    "academic_year": "2025-2026"
+  },
+  {
+    "first_name": "Aadesh",
+    "middle_name": "Gajanan",
+    "last_name": "Dongardive",
+    "DOB": "2003-06-25",
+    "year": 4,
+    "semester": 8,
+    "email": "aadesh.dongardive@college.edu",
+    "primary_phone": "9001000010",
+    "alternate_phone": null,
+    "department_id": 1,
+    "password": "Password@123",
+    "academic_year": "2025-2026"
+  }
+]
+

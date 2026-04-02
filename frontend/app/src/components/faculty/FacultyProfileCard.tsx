@@ -1,0 +1,67 @@
+import React from 'react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Avatar } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { useTheme } from '@/context/ThemeContext';
+import { useAuth } from '@/context/AuthContext';
+import { GraduationCap, Mail, Hash, BookOpen } from 'lucide-react';
+import type { FacultyProfile } from '@/types';
+
+interface FacultyProfileCardProps {
+    profile: FacultyProfile;
+}
+
+export const FacultyProfileCard: React.FC<FacultyProfileCardProps> = ({ profile }) => {
+    const { theme } = useTheme();
+    const { user } = useAuth();
+
+    const details = [
+        { icon: Mail, label: 'Email', value: profile.email || user?.email || 'N/A' },
+        { icon: Hash, label: 'Faculty ID', value: profile.teacher_id || user?.id || (profile as any).id || 'N/A' },
+        { icon: GraduationCap, label: 'Designation', value: profile.designation || (profile as any).role || 'Faculty' },
+        { icon: BookOpen, label: 'Department', value: profile.department_name || profile.department_id || (profile as any).dept_id || 'N/A' },
+    ];
+
+    return (
+        <Card
+            className="border-0 shadow-lg overflow-hidden relative"
+            style={{ background: theme.surface }}
+        >
+            <div
+                className="h-32 absolute top-0 left-0 right-0"
+                style={{ background: theme.gradient }}
+            />
+            <CardContent className="pt-20 px-6 pb-6 relative z-10">
+                <div className="text-center mb-6">
+                    <Avatar className="w-24 h-24 mx-auto border-4 mb-4 flex items-center justify-center bg-blue-50 dark:bg-blue-900/20" style={{ borderColor: theme.surface }}>
+                        <span className="text-5xl">👨‍🏫</span>
+                    </Avatar>
+                    <h2 className="text-2xl font-bold mb-1" style={{ color: theme.text }}>
+                        {profile.first_name} {profile.last_name}
+                    </h2>
+                    <Badge variant="outline" className="px-3" style={{ borderColor: theme.border, color: theme.textMuted }}>
+                        Faculty
+                    </Badge>
+                </div>
+
+                <div className="space-y-4">
+                    {details.map((item, index) => (
+                        <div key={index} className="flex items-center gap-3 p-3 rounded-lg" style={{ background: `${theme.primary}05` }}>
+                            <div className="p-2 rounded-full" style={{ background: `${theme.primary}10` }}>
+                                <item.icon className="w-4 h-4" style={{ color: theme.primary }} />
+                            </div>
+                            <div className="overflow-hidden">
+                                <p className="text-xs font-medium" style={{ color: theme.textMuted }}>
+                                    {item.label}
+                                </p>
+                                <p className="text-sm font-semibold truncate" style={{ color: theme.text }}>
+                                    {item.value}
+                                </p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </CardContent>
+        </Card>
+    );
+};

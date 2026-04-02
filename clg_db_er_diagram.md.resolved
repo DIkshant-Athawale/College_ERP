@@ -1,0 +1,183 @@
+# Entity-Relationship (ER) Diagram for `clg_db`
+
+The following diagram is a clear and correct ER diagram representing the structure and relationships of the database defined in your [mydb.sql](file:///c:/Desktop/mydb.sql) file.
+
+```mermaid
+erDiagram
+    %% Core Entities & Relationships
+    DEPARTMENT ||--o{ STUDENTS : "has"
+    DEPARTMENT ||--o{ TEACHERS : "employs"
+    DEPARTMENT ||--o{ COURSES : "offers"
+    DEPARTMENT ||--o{ NOTICES : "receives"
+    DEPARTMENT ||--o{ TIMETABLE : "schedules_for"
+
+    TEACHERS ||--o{ COURSES : "teaches"
+    TEACHERS ||--o{ ASSIGNMENTS : "creates"
+    TEACHERS ||--o{ ATTENDANCE_SESSIONS : "conducts"
+    TEACHERS ||--o{ NOTICES : "posts"
+    TEACHERS ||--o{ UNIT_TESTS : "creates"
+
+    STUDENTS ||--o{ ENROLLMENTS : "has"
+    STUDENTS ||--o{ ASSIGNMENT_SUBMISSIONS : "submits"
+    STUDENTS ||--o{ ATTENDANCE_RECORDS : "has"
+    STUDENTS ||--o{ STUDENT_FEES : "pays"
+    STUDENTS ||--o{ TEST_SCORES : "scores"
+
+    COURSES ||--o{ ENROLLMENTS : "includes"
+    COURSES ||--o{ ASSIGNMENTS : "has"
+    COURSES ||--o{ ATTENDANCE_SESSIONS : "has"
+    COURSES ||--o{ UNIT_TESTS : "has"
+    COURSES ||--o{ TIMETABLE : "scheduled_in"
+
+    ASSIGNMENTS ||--o{ ASSIGNMENT_SUBMISSIONS : "receives"
+    ATTENDANCE_SESSIONS ||--o{ ATTENDANCE_RECORDS : "contains"
+    UNIT_TESTS ||--o{ TEST_SCORES : "records"
+    TIME_SLOTS ||--o{ TIMETABLE : "assigned_to"
+
+    %% Entity Details
+    DEPARTMENT {
+        int department_id PK
+        varchar department_code
+        varchar department_name
+    }
+
+    STUDENTS {
+        int student_id PK
+        varchar first_name
+        varchar last_name
+        varchar email
+        int department_id FK
+        enum status
+    }
+
+    TEACHERS {
+        int teacher_id PK
+        varchar first_name
+        varchar last_name
+        varchar email
+        enum role
+        int department_id FK
+        varchar designation
+    }
+
+    COURSES {
+        int course_id PK
+        varchar course_code
+        varchar course_name
+        int department_id FK
+        int teacher_id FK
+        enum subject_type
+    }
+
+    ENROLLMENTS {
+        int enrollment_id PK
+        int student_id FK
+        int course_id FK
+        varchar academic_year
+        timestamp enrolled_at
+    }
+
+    ASSIGNMENTS {
+        int assignment_id PK
+        int course_id FK
+        varchar title
+        date deadline
+        int created_by FK
+    }
+
+    ASSIGNMENT_SUBMISSIONS {
+        int submission_id PK
+        int assignment_id FK
+        int student_id FK
+        boolean submitted
+        timestamp submitted_at
+    }
+
+    ATTENDANCE_SESSIONS {
+        int session_id PK
+        int course_id FK
+        date session_date
+        int created_by FK
+        varchar academic_year
+    }
+
+    ATTENDANCE_RECORDS {
+        int record_id PK
+        int session_id FK
+        int student_id FK
+        enum status
+    }
+
+    STUDENT_FEES {
+        int fee_id PK
+        int student_id FK
+        varchar academic_year
+        decimal total_fee
+        decimal paid_amount
+    }
+
+    NOTICES {
+        int notice_id PK
+        varchar title
+        text message
+        int posted_by_id FK
+        int department_id FK
+        enum target_audience
+    }
+
+    UNIT_TESTS {
+        int test_id PK
+        int course_id FK
+        varchar title
+        date test_date
+        int created_by FK
+        decimal max_marks
+    }
+
+    TEST_SCORES {
+        int score_id PK
+        int test_id FK
+        int student_id FK
+        decimal marks_obtained
+        boolean is_absent
+    }
+
+    TIME_SLOTS {
+        int slot_id PK
+        time start_time
+        time end_time
+    }
+
+    TIMETABLE {
+        int timetable_id PK
+        int department_id FK
+        int slot_id FK
+        int course_id FK
+        enum day
+    }
+
+    ESSENTIAL_LINKS {
+        int link_id PK
+        varchar title
+        varchar url
+        timestamp created_at
+    }
+
+    REFRESH_TOKENS {
+        int id PK
+        int user_id
+        enum user_type
+        enum role
+        varchar token
+        datetime expires_at
+    }
+```
+
+## Relationships Explained
+
+- **Department** is the top-level entity that contains **Students**, **Teachers**, **Courses**, **Timetable** entries, and **Notices**.
+- **Teachers** oversee courses, log attendance sessions, post notices, and create both unit tests and assignments.
+- **Courses** act as the central unit for academics. They involve enrollments from students, and form the basis for unit tests, attendance, and assignments. 
+- **Students** participate in academic operations by submitting assignments, taking unit tests, paying fees, having enrollments tied to courses, and possessing attendance records.
+- **Timetable** maps the relation between a **Time Slot**, a **Department**, and a **Course** on a specific day of the week.
+- **Essential Links** and **Refresh Tokens** do not hold hard constraints or obvious logical foreign keys in the schema provided, meaning they behave as standalone tracking tables.

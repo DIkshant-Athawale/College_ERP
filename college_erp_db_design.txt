@@ -1,0 +1,200 @@
+use clg_db;
+select * from students;
+select * from teachers;
+select * from department;
+select * from courses;
+select * from enrollments;
+select * from attendance_sessions;
+select * from attendance_records;
+select * from refresh_tokens;
+select * from student_fees;
+select * from timetable;
+show tables;
+describe refresh_tokens;
+
+
+
+-- students table 
+CREATE TABLE students (
+    student_id INT AUTO_INCREMENT PRIMARY KEY,
+    first_name VARCHAR(30) NOT NULL,
+    middle_name VARCHAR(30) ,
+    last_name VARCHAR(30) NOT NULL,
+    DOB DATE,
+    year INT NOT NULL,   
+	semester INT NOT NULL,
+    email VARCHAR(320) NOT NULL UNIQUE,
+    primary_phone VARCHAR(15) NOT NULL,
+    alternate_phone VARCHAR(15),
+    department_id INT NOT NULL,
+    password VARCHAR(255),
+    academic_year VARCHAR(20),
+    CONSTRAINT fk_students_department
+        FOREIGN KEY (department_id)
+        REFERENCES department(department_id)
+        ON DELETE RESTRICT
+) ENGINE=InnoDB;
+
+
+
+-- Teacher table
+CREATE TABLE teachers (
+    teacher_id INT AUTO_INCREMENT PRIMARY KEY,
+    first_name VARCHAR(30) NOT NULL,
+    last_name VARCHAR(30) NOT NULL,
+    email VARCHAR(320) NOT NULL UNIQUE,
+    password varchar(255) NOT NULL,
+    role ENUM('faculty','admin') NOT NULL ,
+    primary_phone VARCHAR(15) NOT NULL,
+    alternate_phone VARCHAR(15),
+    department_id INT NOT NULL,
+    designation VARCHAR(100),
+    CONSTRAINT fk_teacher_department
+        FOREIGN KEY (department_id)
+        REFERENCES department(department_id)
+) ENGINE=InnoDB;
+
+
+-- refresh token for long lived logins
+CREATE TABLE refresh_tokens (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  user_type ENUM('student','faculty') NOT NULL,
+  role ENUM('admin','student','faculty') ,
+  token VARCHAR(255) NOT NULL,
+  expires_at DATETIME NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+-- course table 
+CREATE TABLE courses ( 
+course_id INT AUTO_INCREMENT PRIMARY KEY,
+course_code VARCHAR(30) UNIQUE,
+course_name VARCHAR(256) NOT NULL,
+department_id INT NOT NULL, 
+year INT NOT NULL, 
+semester INT NOT NULL, 
+teacher_id INT NOT NULL,
+UNIQUE (course_code), 
+FOREIGN KEY (department_id) REFERENCES department(department_id), 
+FOREIGN KEY (teacher_id) REFERENCES teachers(teacher_id) on DELETE RESTRICT
+)ENGINE=InnoDB; 
+
+
+-- creating enrollment table helps in attendance 
+CREATE TABLE enrollments ( 
+enrollment_id INT AUTO_INCREMENT PRIMARY KEY, 
+student_id INT NOT NULL,
+course_id INT NOT NULL,
+academic_year VARCHAR(9) NOT NULL, -- 2024-2025 
+enrolled_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- when the data is feed to db 
+UNIQUE (student_id, course_id),-- one student per course 
+FOREIGN KEY (student_id) REFERENCES students(student_id) ON DELETE CASCADE, 
+FOREIGN KEY (course_id) REFERENCES courses(course_id) ON DELETE CASCADE 
+)ENGINE=InnoDB;
+
+
+
+-- lecture/session 
+CREATE TABLE attendance_sessions (
+  session_id INT AUTO_INCREMENT PRIMARY KEY,
+  course_id INT NOT NULL,
+  session_date DATE NOT NULL,
+  created_by INT NOT NULL, -- teacher_id
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  
+  FOREIGN KEY (course_id) REFERENCES courses(course_id),
+  FOREIGN KEY (created_by) REFERENCES teachers(teacher_id)
+) ENGINE=InnoDB;
+
+-- attendance using sessions
+CREATE TABLE attendance_records (
+  record_id INT AUTO_INCREMENT PRIMARY KEY,
+  session_id INT NOT NULL,
+  student_id INT NOT NULL,
+  status ENUM('present','absent') NOT NULL,
+  FOREIGN KEY (session_id) REFERENCES attendance_sessions(session_id) ON DELETE CASCADE,
+  FOREIGN KEY (student_id) REFERENCES students(student_id) ON DELETE CASCADE,
+  UNIQUE (session_id, student_id) -- prevents multiple attendance per student in single session
+) ENGINE=InnoDB;
+
+-- fee
+CREATE TABLE student_fees (
+    fee_id INT AUTO_INCREMENT PRIMARY KEY,
+    student_id INT NOT NULL,
+    academic_year VARCHAR(20) NOT NULL,
+    total_fee DECIMAL(10,2) NOT NULL,
+    paid_amount DECIMAL(10,2) DEFAULT 0,
+    
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_fee_student
+        FOREIGN KEY (student_id)
+        REFERENCES students(student_id)
+        ON DELETE CASCADE,
+
+    UNIQUE (student_id, academic_year) -- one fee record per year
+) ENGINE=InnoDB;
+
+-- time slots in admin pending
+CREATE TABLE time_slots (
+    slot_id INT AUTO_INCREMENT PRIMARY KEY,
+    start_time TIME NOT NULL,
+    end_time TIME NOT NULL,
+    UNIQUE (start_time, end_time)
+) ENGINE=InnoDB;
+
+
+
+-- timetable 
+CREATE TABLE timetable (
+    timetable_id INT AUTO_INCREMENT PRIMARY KEY,
+    department_id INT NOT NULL,
+    semester INT NOT NULL,
+    day ENUM('Monday','Tuesday','Wednesday','Thursday','Friday','Saturday') NOT NULL,
+    slot_id INT NOT NULL,
+    course_id INT NOT NULL,
+    
+    FOREIGN KEY (department_id) REFERENCES department(department_id),
+    FOREIGN KEY (slot_id) REFERENCES time_slots(slot_id),
+    FOREIGN KEY (course_id) REFERENCES courses(course_id)
+);
+
+
+INSERT INTO time_slots (start_time, end_time) VALUES
+('10:30:00','11:30:00'),
+('11:30:00','12:30:00'),
+('13:15:00','14:15:00'),
+('14:15:00','15:15:00'),
+('15:30:00','16:30:00'),
+('16:30:00','17:30:00');
+
+INSERT INTO timetable 
+(department_id, year, semester, day, slot_id, course_id, teacher_id) VALUES
+(1,4,8,'Monday',1,17,3),   
+(1,4,8,'Monday',2,19,12),  
+(1,4,8,'Monday',3,20,8),   
+(1,4,8,'Monday',4,21,9),   
+(1,4,8,'Monday',5,18,14),  
+(1,4,8,'Tuesday',1,19,12),
+(1,4,8,'Tuesday',2,17,3),
+(1,4,8,'Tuesday',3,18,14),
+(1,4,8,'Tuesday',4,20,8),
+(1,4,8,'Tuesday',5,21,9),
+(1,4,8,'Wednesday',1,20,8),
+(1,4,8,'Wednesday',2,21,9),
+(1,4,8,'Wednesday',3,17,3),
+(1,4,8,'Wednesday',4,19,12),
+(1,4,8,'Wednesday',5,18,14),
+(1,4,8,'Thursday',1,21,9),
+(1,4,8,'Thursday',2,20,8),
+(1,4,8,'Thursday',3,19,12),
+(1,4,8,'Thursday',4,17,3),
+(1,4,8,'Thursday',5,18,14),
+(1,4,8,'Friday',1,18,14),
+(1,4,8,'Friday',2,17,3),
+(1,4,8,'Friday',3,19,12),
+(1,4,8,'Friday',4,20,8),
+(1,4,8,'Friday',5,21,9);

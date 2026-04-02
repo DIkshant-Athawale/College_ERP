@@ -1,0 +1,149 @@
+VI. WORKING OF SYSTEM
+This chapter presents a detailed account of the working of the College Enterprise Resource Planning (ERP) system developed as part of this project. The system automates the core administrative and academic operations of a college, including student management, faculty management, attendance tracking, marks and result management, fee management, timetable scheduling, and notice dissemination. The discussion that follows is based entirely on the actual implementation of the system and describes, in precise terms, how each module operates, how the frontend and backend communicate, how data is persisted and retrieved, and how role-based access control governs the behaviour of the system for different categories of users.
+Overall Working Flow of the College ERP System
+The College ERP system follows a three-tier client–server architecture. The overall working flow is summarised as follows:
+Presentation Tier (Frontend): Built using React.js 18 with TypeScript and bundled using Vite, the frontend provides the graphical user interface through which all users interact with the system. It utilises Tailwind CSS for styling, Radix UI for accessible component primitives, shadcn/ui for pre-built accessible component primitives, and Sonner for toast notifications.
+Application Tier (Backend): The backend is implemented using Node.js with the Express.js (version 5) framework. It exposes a RESTful API that the frontend consumes. The backend handles all business logic, authentication, authorisation, input validation, and database interaction.
+Data Tier (Database): A MySQL relational database stores all persistent data. The backend communicates with the database using the mysql2/promise library, which provides an asynchronous, promise-based interface with connection pooling.
+Theme System: The application includes a built-in light/dark mode toggle managed by a ThemeContext provider. The selected theme is persisted to localStorage and applied by toggling a dark CSS class on the root HTML element. The colour palette is built around indigo-based primary colours (#6366f1 in light mode, #818cf8 in dark mode) and is applied consistently across the Admin, Faculty, and Student dashboards.
+Working of Each Module
+Student Module
+Students access a read-only dashboard that aggregates all relevant academic data. 
+6.1 Dashboard Data Loading
+When a student navigates to their dashboard, a single API call (GET /student/dashboard) triggers 9 SQL queries on the backend, returning a comprehensive dataset:
+Data
+Description
+Profile
+Student's name, email, year, semester, department, academic year
+Enrolled Subjects
+List of courses the student is enrolled in (course name, code)
+Subject-wise Attendance
+Per-course attendance: total classes and present classes
+Overall Attendance
+Aggregate attendance percentage across all subjects
+Fee Record
+Total fee, paid amount, and remaining balance
+Timetable
+Weekly schedule filtered by the student's department and semester
+Assignments
+Assignments for enrolled courses with submission status
+Unit Tests
+Tests for enrolled courses with obtained marks and absence status
+Current Status
+Student's current academic standing (e.g. Good Standing)
+Essential Links
+Admin-curated list of important institutional links
+Additionally, notices from the past 7 days are displayed — including admin broadcasts and department-specific notices.
+6.2 Notice Display
+GET /student/notices/recent returns notices relevant to the student — both global admin announcements and notices from the student's own department. Notices are sorted by recency and limited to 10.
+Faculty Module
+Faculty members access a tab-based dashboard organized into eight tabs — Dashboard, Courses, Attendance, Assignments, Unit Tests, Internal Marks, Timetable, and Enrollment — each providing a focused interface for a specific functionality.
+5.1 Dashboard Overview
+When a faculty member logs in, the system fetches their profile, assigned courses, today's timetable, and key statistics in parallel. The dashboard presents:
+Quick Stats — Courses assigned, total students, classes per week, and average attendance.
+Notice Marquee — Scrolling ticker showing recent admin and department-specific notices.
+Tab Navigation — Eight tabs to switch between different functional areas.
+5.2 Dashboard Tab
+The default landing tab, giving the faculty a quick summary of their day:
+Displays personal details — name, email, phone, designation, and department.
+Shows today's class schedule with course names and time slots.
+Lists the first 3 assigned courses as clickable cards for quick navigation.
+Shows essential institutional links managed by the admin.
+5.3 Courses Tab
+Displays all assigned courses with their code, name, department, semester, and total attendance sessions conducted. Clicking a course opens a detailed view showing each enrolled student's attendance percentage, session count, and a color-coded status badge:
+🟢 Good — Attendance ≥ 75%
+🔴 At Risk — Attendance < 75%
+⚪ No Sessions — No sessions conducted yet
+5.4 Attendance Tab
+A step-by-step workflow for recording attendance:
+Faculty selects a course and date, then clicks "Create Session".
+All enrolled students load with everyone marked Present by default.
+Faculty toggles individual students between Present and Absent.
+On saving, the session is created and attendance records are submitted in a single database transaction. If a session already exists for that course and date, the system prevents duplicates with a clear error message.
+5.5 Assignments Tab
+Faculty selects a course and views all assignments with title, deadline, and submission count.
+New assignments can be created with a title and optional deadline.
+Clicking an assignment shows each student's submission status with timestamps.
+Faculty can mark submissions as submitted or not submitted; the system handles both new and updated records seamlessly.
+Deleting an assignment cascade to all related submission records.
+5.6 Tests Tab
+Follows a similar pattern to Assignments:
+Faculty creates unit tests with a title, date, and maximum marks.
+Scores are entered per student, with an option to mark a student as absent (which nullifies their marks).
+All scores are saved in batch, and deleting a test removes all associated score records.
+5.7 Internal Marks Tab
+A read-only, auto-calculated view that computes each student's internal marks from three components:
+Assignment Score — Percentage of assignments completed.
+Unit Test Score — Average of normalized scores across all tests.
+Attendance Score — Based on the student’s attendance percentage using a bucket system: 90 percent or above = 5 pts, 75 percent or above = 4 pts, 60 percent or above = 3 pts, 50 percent or above = 2 pts, below 50 percent = 1 pt. This bucket score is then scaled by the configured attendance weight (atw).
+These three scores are combined into a final internal marks total, displayed in a clean table per student.
+5.8 Timetable Tab
+Displays the faculty's complete weekly timetable in a grid format — days as rows and time slots as columns. It also shows other courses running in the same semesters, giving the faculty useful context around their schedule.
+This tab handles manual enrollments. Faculty select an assigned Professional or Open Elective course and view two lists: eligible students and currently enrolled students. Faculty can seamlessly enroll or drop students as needed, keeping the enrollment records up-to-date.
+5.9 Enrollment Tab
+5.10 Notice Management
+Faculty can post notices targeted to their own department. Unlike admin notices that go to everyone, department notices are only visible to users within the same department. The notice marquee updates immediately after posting, and faculty can see both admin-wide broadcasts and their own department's notices.
+Administrator Module
+The Administrator module serves as the control center of the system, giving the admin complete authority over institutional data. Once logged in, the admin is greeted with a clean dashboard that organizes everything into collapsible sections, making navigation intuitive and clutter-free.
+4.1 Dashboard Overview
+The dashboard gives the admin an at-a-glance view of the institution — showing live counts of total departments, teachers, enrolled students, and courses. A scrolling notice marquee keeps recent announcements visible, while dedicated sections for timetable and student status management sit below the main navigation panels.
+4.2 Department Management
+The admin can view all departments in a sortable, paginated table and perform the usual add, edit, and delete operations. The system is smart enough to prevent accidental deletions — if a department still has teachers or courses linked to it, the delete action is blocked with a clear error message.
+4.3 Teacher Management
+Teachers can be browsed and filtered by department. The admin can add individual teachers or process multiple records at once, all handled within a single database transaction to ensure consistency. Similarly, editing supports batch updates. Deleting a teacher is only allowed once they've been unassigned from all courses, preventing orphaned records.
+4.4 Student Management
+Students can be filtered by department, year, and academic year. When a new student is added, the system takes care of several things automatically in one go — the password is securely hashed, a default fee record of ₹85,000 is created, and the student is enrolled in all relevant courses based on their department and semester. If anything goes wrong mid-way, the entire operation is rolled back to keep the data clean. Notably, sensitive academic fields like year and semester can only be changed through the dedicated Student Status Management section, not through the regular edit form.
+4.5 Course Management
+Courses can be filtered by department, year, and semester. The admin can create courses, assign or reassign teachers, and delete courses when needed. Deleting a course automatically cleans up the related timetable entries and enrollment records.
+4.6 Timetable Management
+The admin starts by defining the institution's time slots (for example, 9:00–10:00 AM), which are then reused across the timetable. From there, courses are mapped to specific days and time slots for each department and semester, resulting in a structured weekly timetable grid. Time slots that are already in use cannot be deleted, which protects the integrity of existing schedules.
+4.7 Student Status Management
+This section handles the academic lifecycle of students through three key operations:
+Promotion moves students to the next semester, re-enrolls them in new courses, and generates a fresh fee record. Students finishing their final semester (Semester 8) are automatically marked as Graduated.
+Mark as DC flags a student as Discontinued, removing their active enrollments while keeping their fee history intact for record-keeping.
+Re-enrollment brings a DC student back into the system, restoring their active status and setting up new enrollment records.
+4.8 Notice Management
+The admin can post notices that are targeted to specific audiences. When creating a notice, the admin selects a department, academic year, and whether it is for students, teachers, or all users. Notices targeting all are visible institution-wide, while targeted notices are filtered to the recipient's department and role. The dashboard's scrolling marquee always shows the 10 most recent notices from the past week, ensuring important updates don't go unnoticed.
+4.9 Essential Links Management
+The admin maintains a curated list of important institutional links — such as the university website, library portal, or placement cell — which appear across dashboards for all users, ensuring everyone has quick access to the resources they need.
+How a User Interacts with the System
+5.1 Authentication
+The user enters their registered email address and password on the Login page.
+The frontend sends a POST request to /login with the credentials.
+The backend first checks the teachers table for a matching email. If found, it compares the provided password against the stored bcrypt hash. If not found in the teachers table, it checks the students table.
+Upon successful verification, the backend generates:
+An access token (JWT signed with JWT_SECRET, valid for 30 minutes) containing userId, role, and userType.
+A refresh token (JWT signed with REFRESH_SECRET, valid for 7 days), which is stored in the refresh_tokens database table and sent to the client as an HTTP-only cookie.
+The frontend stores the access token in localStorage and fetches the full user profile from GET /login/me.
+The AuthContext provider updates its state, marking the user as authenticated.
+5.2 Role-Based Redirection
+After login, the frontend's routing layer determines which dashboard to display:
+Users with role admin are redirected to /admin.
+Users with role student are redirected to /student/dashboard.
+Users with role faculty (or teacher) are redirected to /teacher/dashboard.
+Each route is wrapped in a 
+ProtectedRoute component that checks authentication status and role eligibility. If a user is not authenticated, they are redirected to /login. If authenticated but lacking the required role, they are redirected to /unauthorized.
+5.3 Performing Operations
+Once on their dashboard, the user can navigate through the various modules available to their role. All data interactions follow the same pattern:
+The UI component mounts and triggers an API call to fetch relevant data.
+The data is displayed in tables, cards, or charts.
+The user performs an action (create, edit, delete, submit) via form inputs or buttons.
+The frontend sends the appropriate HTTP request (POST, PATCH, PUT, or DELETE) to the backend.
+The backend validates the input, performs the database operation within a transaction (where appropriate), and returns a success or error response.
+The frontend displays a toast notification indicating the outcome.
+5.4 Session Persistence and Token Refresh
+When the user returns to the application (or refreshes the page), the 
+AuthContext runs its checkAuth function:
+It sends a POST request to /login/refresh with the HTTP-only refresh cookie.
+The backend verifies the refresh token against the refresh_tokens table and, if valid, issues a new access token.
+The frontend stores the new token and fetches the user profile, restoring the authenticated session.
+If the refresh token is expired or invalid, the user is redirected to the Login page.
+Additionally, the Axios response interceptor implements a silent refresh mechanism: when any API call receives a 401 Unauthorized response, the interceptor automatically attempts a token refresh. Multiple concurrent failing requests are queued and replayed after a single refresh call succeeds, preventing redundant refresh requests.
+5.5 Logout
+When the user clicks the logout button:
+The frontend calls POST /login/logout.
+The backend deletes the corresponding refresh token from the refresh_tokens table and clears the HTTP-only cookie.
+The frontend clears localStorage (removing the access token and cached user data), resets the AuthContext state, and navigates to the Login page.
+5.5 Real-Time Updates via WebSockets
+The system uses Socket.IO to push real-time notifications to all connected clients. The backend wraps the Express HTTP server with a Socket.IO instance configured to accept connections from the frontend origin. After every successful mutating HTTP response (POST, PUT, PATCH, or DELETE), the server automatically emits a db_change event to all connected clients.
+On the frontend, the SocketContext provider connects on application mount and listens for db_change events. When such an event is received, it dispatches a custom browser document event called db_changed that active dashboard pages subscribe to, triggering an automatic data re-fetch. This means that a notice posted by an admin, attendance marked by a teacher, or a new assignment added for a course becomes visible to all relevant users instantly, without requiring a manual page refresh.

@@ -1,0 +1,28 @@
+Problem 1: refresh_tokens design mismatch (CRITICAL)
+
+Your table (earlier):
+
+refresh_tokens(
+  user_id,
+  user_type,
+  role,
+  token,
+  expires_at
+)
+
+Why this is bad
+user_id can point to students OR teachers
+No foreign key
+No referential integrity
+DB cannot enforce correctness
+Result
+Orphaned tokens
+Security issues
+Hard cleanup
+🔴 This is the BIGGEST design flaw\
+
+
+problem 2 : needed validation in middleware in code they are going long
+
+
+problem3: No indexing

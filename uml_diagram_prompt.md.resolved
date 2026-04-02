@@ -1,0 +1,227 @@
+# UML Diagram Prompt — College ERP System (Backend + Frontend)
+
+> **Instruction to AI**: Generate the following UML diagrams for a full-stack College ERP system. The backend is Node.js/Express with MySQL, and the frontend is React/TypeScript with Vite.
+
+---
+
+## 1. Entity-Relationship (ER) / Class Diagram — Database Schema
+
+Generate a **class diagram** representing these MySQL tables, their columns, data types, and relationships:
+
+### Tables & Columns
+
+| Table | Columns |
+|-------|---------|
+| **department** | `department_id` (PK, INT, AUTO_INCREMENT), `department_code` (VARCHAR, UNIQUE), `department_name` (VARCHAR, UNIQUE) |
+| **teachers** | `teacher_id` (PK, INT, AUTO_INCREMENT), `first_name`, `last_name`, `email` (UNIQUE), `password` (hashed), `role` (ENUM: 'admin','faculty'), `primary_phone`, `alternate_phone` (nullable), `department_id` (FK → department), `designation` |
+| **students** | `student_id` (PK, INT, AUTO_INCREMENT), `first_name`, `middle_name` (nullable), `last_name`, `DOB` (DATE, nullable), `email` (UNIQUE), `password` (hashed), `primary_phone`, `alternate_phone` (nullable), `department_id` (FK → department), `year` (1-4), `semester` (1-8), `academic_year`, `status` (ENUM: 'active','dc','graduated') |
+| **courses** | `course_id` (PK, INT, AUTO_INCREMENT), `course_code` (UNIQUE), `course_name`, `department_id` (FK → department), `year`, `semester`, `teacher_id` (FK → teachers) |
+| **enrollments** | `enrollment_id` (PK, INT, AUTO_INCREMENT), `student_id` (FK → students), `course_id` (FK → courses, ON DELETE CASCADE), `academic_year` |
+| **timetable** | `timetable_id` (PK, INT, AUTO_INCREMENT), `department_id` (FK → department), `semester`, `day` (ENUM: Mon-Sat), `slot_id` (FK → time_slots), `course_id` (FK → courses) |
+| **time_slots** | `slot_id` (PK, INT, AUTO_INCREMENT), `start_time` (TIME, UNIQUE), `end_time` (TIME) |
+| **attendance_sessions** | `session_id` (PK, INT, AUTO_INCREMENT), `course_id` (FK → courses), `session_date` (DATE), `created_by` (FK → teachers), `academic_year`, UNIQUE(course_id, session_date) |
+| **attendance_records** | `record_id` (PK, INT, AUTO_INCREMENT), `session_id` (FK → attendance_sessions), `student_id` (FK → students), `status` (ENUM: 'present','absent') |
+| **student_fees** | `fee_id` (PK, INT, AUTO_INCREMENT), `student_id` (FK → students), `academic_year`, `total_fee` (DECIMAL), `paid_amount` (DECIMAL, DEFAULT 0) |
+| **refresh_tokens** | [id](file:///C:/Desktop/frontend/app/src/context/AuthContext.tsx#19-143) (PK, INT, AUTO_INCREMENT), `user_id`, `user_type` (ENUM: 'student','faculty'), `role`, `token` (TEXT), `expires_at` (DATETIME) |
+
+### Relationships (Cardinality)
+
+- **department** 1 ──── * **teachers** (has many)
+- **department** 1 ──── * **students** (has many)
+- **department** 1 ──── * **courses** (has many)
+- **department** 1 ──── * **timetable** (has many)
+- **teachers** 1 ──── * **courses** (teaches many)
+- **teachers** 1 ──── * **attendance_sessions** (creates many)
+- **students** 1 ──── * **enrollments** (enrolled in many)
+- **courses** 1 ──── * **enrollments** (has many enrollments)
+- **courses** 1 ──── * **timetable** (scheduled in many slots)
+- **courses** 1 ──── * **attendance_sessions** (has many sessions)
+- **time_slots** 1 ──── * **timetable** (used by many entries)
+- **attendance_sessions** 1 ──── * **attendance_records** (has many records)
+- **students** 1 ──── * **attendance_records** (has many records)
+- **students** 1 ──── * **student_fees** (has many fee records)
+
+---
+
+## 2. Component Diagram — System Architecture
+
+Generate a **component diagram** showing the high-level architecture:
+
+### Backend Components
+- **Express Server** ([index.js](file:///C:/Desktop/gitclone/College_ERP/backend/index.js)) — Entry point, CORS, cookie-parser
+- **Route Modules**: [auth.js](file:///C:/Desktop/gitclone/College_ERP/backend/routes/auth.js), [admin.js](file:///C:/Desktop/gitclone/College_ERP/backend/routes/admin.js), [student.js](file:///C:/Desktop/gitclone/College_ERP/backend/routes/student.js), [teacher.js](file:///C:/Desktop/gitclone/College_ERP/backend/routes/teacher.js)
+- **Middleware**: [authenticate](file:///C:/Desktop/gitclone/College_ERP/backend/middleware/auth.js#3-31) (JWT verification), [authorize](file:///C:/Desktop/gitclone/College_ERP/backend/middleware/authorize.js#3-14) (role-based access)
+- **Database Layer**: [connect_db.js](file:///C:/Desktop/gitclone/College_ERP/backend/config/connect_db.js) → MySQL connection pool (`mysql2/promise`)
+- **External Libraries**: `bcrypt` (password hashing), `jsonwebtoken` (JWT), `cookie-parser`
+
+### Frontend Components
+- **App Shell**: [App.tsx](file:///C:/Desktop/frontend/app/src/App.tsx) → [AppRoutes](file:///C:/Desktop/frontend/app/src/routes.tsx#6-51) (react-router-dom)
+- **Contexts**: [AuthContext](file:///C:/Desktop/frontend/app/src/context/AuthContext.tsx#7-16) (login/logout/token refresh), `ThemeContext` (dark/light mode)
+- **Pages**: [Login](file:///C:/Desktop/frontend/app/src/types/index.ts#10-14), `AdminDashboard`, [StudentDashboard](file:///C:/Desktop/frontend/app/src/types/index.ts#309-318), [FacultyDashboard](file:///C:/Desktop/frontend/app/src/types/index.ts#338-348), `NotFound`, `Unauthorized`
+- **Shared Components**: `Navbar`, `ProtectedRoute`, `ThemeSwitcher`, `ErrorBoundary`
+- **Student Components**: `StudentProfileCard`, `SubjectsCard`, `FeeCard`, `AttendanceBarSection`, `TimetableTable`, `EssentialLinksSection`
+- **Faculty Components**: `FacultyProfileCard`, `FacultyCoursesCard`, `FacultyTimetableTable`
+- **API Layer** (Axios-based): [auth.ts](file:///C:/Desktop/frontend/app/src/api/auth.ts), [student.ts](file:///C:/Desktop/frontend/app/src/api/student.ts), [faculty.ts](file:///C:/Desktop/frontend/app/src/api/faculty.ts), [courses.ts](file:///C:/Desktop/frontend/app/src/api/courses.ts), [departments.ts](file:///C:/Desktop/frontend/app/src/api/departments.ts), [teachers.ts](file:///C:/Desktop/frontend/app/src/api/teachers.ts), [students.ts](file:///C:/Desktop/frontend/app/src/api/students.ts), [timetable.ts](file:///C:/Desktop/frontend/app/src/api/timetable.ts), [statistics.ts](file:///C:/Desktop/frontend/app/src/api/statistics.ts), [axios.ts](file:///C:/Desktop/frontend/app/src/api/axios.ts) (interceptors + token refresh)
+- **UI Library**: shadcn/ui components
+
+### Connection
+- Frontend ↔ Backend via REST API (HTTP, JSON)
+- Auth: JWT access token (Bearer header) + refresh token (HttpOnly cookie)
+
+---
+
+## 3. Sequence Diagrams
+
+Generate **sequence diagrams** for these key flows:
+
+### 3a. Login Flow
+```
+Actor: User (Browser)
+Participants: Frontend (Login Page), AuthContext, API Layer (axios), Backend (auth.js), MySQL DB
+
+1. User enters email + password
+2. Frontend calls authApi.login({ email, password })
+3. API Layer sends POST /login to Backend
+4. Backend checks teachers table (email match)
+   - If found: bcrypt.compare password → generate accessToken (JWT, 30m) + refreshToken (JWT, 7d)
+   - If not found: check students table → same flow
+5. Backend deletes old refresh tokens for user, inserts new one into refresh_tokens table
+6. Backend sends: { accessToken, role, userType } + sets refreshToken in HttpOnly cookie
+7. API Layer returns response to AuthContext
+8. AuthContext stores token in localStorage, sets user state
+9. Frontend redirects based on role: admin→/admin, student→/student/dashboard, faculty→/teacher/dashboard
+```
+
+### 3b. Token Refresh Flow
+```
+1. Axios interceptor detects 401 response
+2. Sends POST /login/refresh with refreshToken cookie
+3. Backend verifies refresh token (JWT + DB lookup)
+4. Generates new accessToken, returns it
+5. Axios retries original failed request with new token
+```
+
+### 3c. Admin Creates Student
+```
+1. Admin fills student form on AdminDashboard
+2. Frontend sends POST /admin/create_student with student data
+3. Backend validates fields, hashes password (bcrypt)
+4. BEGIN TRANSACTION
+5. INSERT into students table
+6. INSERT fee record into student_fees (default 85000)
+7. SELECT matching courses by department_id + semester
+8. INSERT enrollments for each course
+9. COMMIT
+10. Return { student_id }
+```
+
+### 3d. Faculty Takes Attendance
+```
+1. Faculty selects course → POST /teacher/attendance/session { course_id, session_date }
+2. Backend creates attendance_session, returns session_id
+3. Faculty view: GET /teacher/attendance/session/:session_id/students
+4. Backend returns enrolled active students for that course
+5. Faculty marks each student → POST /teacher/attendance/submit { session_id, attendance[] }
+6. Backend inserts attendance_records (session_id, student_id, status)
+```
+
+### 3e. Student Views Dashboard
+```
+1. Student logs in → GET /student/dashboard (with JWT Bearer token)
+2. Backend fetches: profile, enrolled subjects, subject-wise attendance, overall attendance, fee record, timetable
+3. Returns aggregated dashboard data
+4. Frontend renders: ProfileCard, SubjectsCard, AttendanceBarSection, FeeCard, TimetableTable
+```
+
+---
+
+## 4. Use Case Diagram
+
+Generate a **use case diagram** with three actors and their capabilities:
+
+### Actor: Admin
+- View dashboard statistics (total departments, faculty, students, courses)
+- **Manage Departments**: Create, Edit
+- **Manage Teachers**: Filter, Create, Edit, Delete (blocked if assigned to courses)
+- **Manage Students**: Filter, Create, Edit, Delete (cascade: enrollments + fees)
+- **Manage Courses**: Filter, Create, Edit, Delete (cascade: timetable + enrollments)
+- **Manage Timetable**: View by dept+semester, Create entry, Delete entry
+- **Manage Time Slots**: View, Create, Edit, Delete (blocked if used in timetable)
+- **Promote Students**: Bulk promote by dept+semester (auto-enroll in next semester courses, create fee record; semester 8 → graduate)
+- **Mark Student DC** (Discontinued): Updates status, removes current enrollments
+- **Re-enroll DC Student**: Reactivate and auto-enroll in semester courses
+
+### Actor: Faculty (Teacher)
+- View dashboard (profile, assigned courses, today's timetable, stats)
+- View entire timetable (all semesters they teach)
+- View course attendance summary (total sessions per course)
+- View student-wise attendance detail per course
+- View their assigned courses list
+- Create attendance session (date-based, per course)
+- View eligible students for a session
+- Submit attendance (mark present/absent per student)
+
+### Actor: Student
+- Login with email + password
+- View personal dashboard (profile, subjects, attendance, fees, timetable)
+- View subject-wise attendance (per course)
+- View overall attendance percentage
+- View fee status (total, paid, remaining)
+- View class timetable (by department + semester)
+
+---
+
+## 5. Deployment Diagram
+
+```
+[Client Browser]
+   ├── React SPA (Vite build, port 5173 dev)
+   │    ├── Axios HTTP client (with interceptors)
+   │    └── LocalStorage (JWT access token)
+   │
+   ↕ HTTP/REST (CORS enabled, credentials: true)
+   │
+[Backend Server]
+   ├── Node.js + Express (port 3000)
+   │    ├── Auth Middleware (JWT verify)
+   │    ├── Role Authorization Middleware
+   │    ├── Route Handlers (admin, auth, student, teacher)
+   │    └── Cookie-based refresh token
+   │
+   ↕ mysql2/promise (connection pool, limit: 10)
+   │
+[MySQL Database]
+   └── Database: clg_db (localhost)
+        └── 11 tables (see ER diagram)
+```
+
+---
+
+## 6. Activity Diagram — Student Promotion Flow
+
+```
+START
+  ↓
+Admin selects department_id + current_semester + new_academic_year
+  ↓
+Fetch all active students in that dept + semester
+  ↓
+FOR EACH student:
+  ├── IF semester == 8 → Mark status = 'graduated' → NEXT
+  └── ELSE:
+       ├── Calculate newSemester = current + 1, newYear = ceil(newSem/2)
+       ├── UPDATE student (semester, year, academic_year)
+       ├── SELECT courses for new semester
+       ├── INSERT enrollments for each course
+       └── INSERT new fee record (85000)
+  ↓
+COMMIT transaction
+  ↓
+Return success message
+  ↓
+END
+```
+
+---
+
+> **Style Notes**: Use clean, professional UML notation. Color-code by domain (blue for backend, green for frontend, orange for database). Include cardinality labels on all relationships. Use proper UML stereotypes (<<interface>>, <<component>>, <<actor>>).

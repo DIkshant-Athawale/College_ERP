@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>College ERP — UML Diagrams</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface-hover: #22263a;
+      --border: #2a2f45;
+      --text: #e2e8f0;
+      --text-muted: #8892b0;
+      --accent: #7c3aed;
+      --accent-light: #a78bfa;
+      --accent-glow: rgba(124, 58, 237, 0.25);
+      --blue: #3b82f6;
+      --green: #10b981;
+      --orange: #f59e0b;
+      --red: #ef4444;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* Header */
+    .header {
+      background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #1e1b4b 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 2rem 2rem 0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-top {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .header-icon {
+      width: 48px;
+      height: 48px;
+      background: var(--accent);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      box-shadow: 0 0 20px var(--accent-glow);
+    }
+
+    .header h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #c4b5fd, #818cf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .header p {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-top: 0.25rem;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 0;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .tabs::-webkit-scrollbar { display: none; }
+
+    .tab {
+      padding: 0.75rem 1.25rem;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+      border-bottom: 3px solid transparent;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .tab:hover {
+      color: var(--text);
+      background: rgba(124, 58, 237, 0.08);
+    }
+
+    .tab.active {
+      color: var(--accent-light);
+      border-bottom-color: var(--accent);
+    }
+
+    .tab .tab-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--border);
+      font-size: 0.7rem;
+      margin-right: 0.5rem;
+      font-weight: 600;
+    }
+
+    .tab.active .tab-num {
+      background: var(--accent);
+      color: white;
+    }
+
+    /* Content */
+    .content {
+      padding: 2rem;
+      max-width: 100%;
+      overflow-x: auto;
+    }
+
+    .diagram-card {
+      display: none;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .diagram-card.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .diagram-header {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .diagram-header h2 {
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+
+    .diagram-badge {
+      padding: 0.3rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+
+    .badge-blue { background: rgba(59, 130, 246, 0.15); color: var(--blue); }
+    .badge-green { background: rgba(16, 185, 129, 0.15); color: var(--green); }
+    .badge-orange { background: rgba(245, 158, 11, 0.15); color: var(--orange); }
+    .badge-purple { background: rgba(124, 58, 237, 0.15); color: var(--accent-light); }
+
+    .diagram-body {
+      padding: 2rem;
+      display: flex;
+      justify-content: center;
+      overflow-x: auto;
+      min-height: 400px;
+    }
+
+    .diagram-body .mermaid {
+      width: 100%;
+    }
+
+    .diagram-body svg {
+      max-width: 100%;
+      height: auto;
+    }
+
+    /* Zoom controls */
+    .zoom-controls {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .zoom-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      font-size: 1.1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+
+    .zoom-btn:hover {
+      background: var(--surface-hover);
+      border-color: var(--accent);
+    }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      padding: 2rem;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .header { padding: 1.25rem 1rem 0; }
+      .content { padding: 1rem; }
+      .diagram-body { padding: 1rem; }
+      .header h1 { font-size: 1.3rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="header-top">
+      <div class="header-icon">📐</div>
+      <div>
+        <h1>College ERP — UML Diagrams</h1>
+        <p>Full-stack system design documentation &bull; 6 diagrams</p>
+      </div>
+    </div>
+    <div class="tabs" id="tabs">
+      <button class="tab active" data-tab="0"><span class="tab-num">1</span>ER / Class Diagram</button>
+      <button class="tab" data-tab="1"><span class="tab-num">2</span>Component Diagram</button>
+      <button class="tab" data-tab="2"><span class="tab-num">3</span>Sequence — Login</button>
+      <button class="tab" data-tab="3"><span class="tab-num">4</span>Sequence — Token Refresh</button>
+      <button class="tab" data-tab="4"><span class="tab-num">5</span>Sequence — Create Student</button>
+      <button class="tab" data-tab="5"><span class="tab-num">6</span>Sequence — Attendance</button>
+      <button class="tab" data-tab="6"><span class="tab-num">7</span>Sequence — Student Dashboard</button>
+      <button class="tab" data-tab="7"><span class="tab-num">8</span>Use Case Diagram</button>
+      <button class="tab" data-tab="8"><span class="tab-num">9</span>Deployment Diagram</button>
+      <button class="tab" data-tab="9"><span class="tab-num">10</span>Activity — Promotion Flow</button>
+    </div>
+  </div>
+
+  <div class="content" id="content">
+
+    <!-- 1. ER / Class Diagram -->
+    <div class="diagram-card active" data-card="0">
+      <div class="diagram-header">
+        <h2>Entity-Relationship / Class Diagram — Database Schema</h2>
+        <span class="diagram-badge badge-orange">Database</span>
+      </div>
+      <div class="diagram-body">
+        <pre class="mermaid">
+erDiagram
+    department {
+        INT department_id PK
+        VARCHAR department_code UK
+        VARCHAR department_name UK
+    }
+
+    teachers {
+        INT teacher_id PK
+        VARCHAR first_name
+        VARCHAR last_name
+        VARCHAR email UK
+        VARCHAR password
+        ENUM role
+        VARCHAR primary_phone
+        VARCHAR alternate_phone
+        INT department_id FK
+        VARCHAR designation
+    }
+
+    students {
+        INT student_id PK
+        VARCHAR first_name
+        VARCHAR middle_name
+        VARCHAR last_name
+        DATE DOB
+        VARCHAR email UK
+        VARCHAR password
+        VARCHAR primary_phone
+        VARCHAR alternate_phone
+        INT department_id FK
+        INT year
+        INT semester
+        VARCHAR academic_year
+        ENUM status
+    }
+
+    courses {
+        INT course_id PK
+        VARCHAR course_code UK
+        VARCHAR course_name
+        INT department_id FK
+        INT year
+        INT semester
+        INT teacher_id FK
+    }
+
+    enrollments {
+        INT enrollment_id PK
+        INT student_id FK
+        INT course_id FK
+        VARCHAR academic_year
+    }
+
+    timetable {
+        INT timetable_id PK
+        INT department_id FK
+        INT semester
+        ENUM day
+        INT slot_id FK
+        INT course_id FK
+    }
+
+    time_slots {
+        INT slot_id PK
+        TIME start_time UK
+        TIME end_time
+    }
+
+    attendance_sessions {
+        INT session_id PK
+        INT course_id FK
+        DATE session_date
+        INT created_by FK
+        VARCHAR academic_year
+    }
+
+    attendance_records {
+        INT record_id PK
+        INT session_id FK
+        INT student_id FK
+        ENUM status
+    }
+
+    student_fees {
+        INT fee_id PK
+        INT student_id FK
+        VARCHAR academic_year
+        DECIMAL total_fee
+        DECIMAL paid_amount
+    }
+
+    refresh_tokens {
+        INT id PK
+        INT user_id
+        ENUM user_type
+        VARCHAR role
+        TEXT token
+        DATETIME expires_at
+    }
+
+    department ||--o{ teachers : "has"
+    department ||--o{ students : "has"
+    department ||--o{ courses : "has"
+    department ||--o{ timetable : "has"
+    teachers ||--o{ courses : "teaches"
+    teachers ||--o{ attendance_sessions : "creates"
+    students ||--o{ enrollments : "enrolled_in"
+    courses ||--o{ enrollments : "has"
+    courses ||--o{ timetable : "scheduled_in"
+    courses ||--o{ attendance_sessions : "has"
+    time_slots ||--o{ timetable : "used_by"
+    attendance_sessions ||--o{ attendance_records : "has"
+    students ||--o{ attendance_records : "has"
+    students ||--o{ student_fees : "has"
+        </pre>
+      </div>
+    </div>
+
+    <!-- 2. Component Diagram -->
+    <div class="diagram-card" data-card="1">
+      <div class="diagram-header">
+        <h2>Component Diagram — System Architecture</h2>
+        <span class="diagram-badge badge-purple">Architecture</span>
+      </div>
+      <div class="diagram-body">
+        <pre class="mermaid">
+graph TB
+    subgraph Client["🖥️ Client Browser"]
+        subgraph ReactSPA["React SPA (Vite, port 5173)"]
+            AppShell["App Shell<br/>App.tsx → AppRoutes"]
+            subgraph Contexts["Contexts"]
+                AuthCtx["AuthContext<br/>login/logout/refresh"]
+                ThemeCtx["ThemeContext<br/>dark/light mode"]
+            end
+            subgraph Pages["Pages"]
+                LoginPage["Login Page"]
+                AdminDash["Admin Dashboard"]
+                StudentDash["Student Dashboard"]
+                FacultyDash["Faculty Dashboard"]
+                NotFound["NotFound"]
+                Unauth["Unauthorized"]
+            end
+            subgraph SharedComp["Shared Components"]
+                Navbar["Navbar"]
+                ProtRoute["ProtectedRoute"]
+                ThemeSwitch["ThemeSwitcher"]
+                ErrBound["ErrorBoundary"]
+            end
+            subgraph StudentComp["Student Components"]
+                SProfile["StudentProfileCard"]
+                SSubjects["SubjectsCard"]
+                SFees["FeeCard"]
+                SAttendance["AttendanceBarSection"]
+                STimetable["TimetableTable"]
+                SLinks["EssentialLinksSection"]
+            end
+            subgraph FacultyComp["Faculty Components"]
+                FProfile["FacultyProfileCard"]
+                FCourses["FacultyCoursesCard"]
+                FTimetable["FacultyTimetableTable"]
+            end
+            subgraph APILayer["API Layer (Axios)"]
+                AuthAPI["auth.ts"]
+                StudentAPI["student.ts"]
+                FacultyAPI["faculty.ts"]
+                CoursesAPI["courses.ts"]
+                DeptAPI["departments.ts"]
+                TeachersAPI["teachers.ts"]
+                StudentsAPI["students.ts"]
+                TimetableAPI["timetable.ts"]
+                StatsAPI["statistics.ts"]
+                AxiosInst["axios.ts<br/>interceptors + refresh"]
+            end
+            UILib["shadcn/ui Components"]
+        end
+        LocalStorage["LocalStorage<br/>JWT Access Token"]
+    end
+
+    subgraph Backend["⚙️ Backend Server"]
+        subgraph Express["Node.js + Express (port 3000)"]
+            EntryPoint["index.js<br/>CORS, cookie-parser"]
+            subgraph Routes["Route Modules"]
+                AuthRoute["auth.js"]
+                AdminRoute["admin.js"]
+                StudentRoute["student.js"]
+                TeacherRoute["teacher.js"]
+            end
+            subgraph Middleware["Middleware"]
+                AuthMW["authenticate<br/>JWT verification"]
+                AuthzMW["authorize<br/>role-based access"]
+            end
+        end
+        subgraph ExtLibs["External Libraries"]
+            Bcrypt["bcrypt"]
+            JWT["jsonwebtoken"]
+            CookieP["cookie-parser"]
+        end
+        DBLayer["connect_db.js<br/>MySQL connection pool"]
+    end
+
+    subgraph Database["🗄️ MySQL Database"]
+        MySQL["clg_db (localhost)<br/>11 tables"]
+    end
+
+    APILayer -->|"HTTP/REST<br/>JSON + JWT Bearer"| EntryPoint
+    EntryPoint --> AuthMW
+    AuthMW --> AuthzMW
+    AuthzMW --> Routes
+    Routes --> DBLayer
+    DBLayer -->|"mysql2/promise<br/>pool limit: 10"| MySQL
+    AuthCtx --> LocalStorage
+    AxiosInst -->|"HttpOnly Cookie<br/>Refresh Token"| AuthRoute
+
+    style Client fill:#1a2332,stroke:#3b82f6,stroke-width:2px,color:#e2e8f0
+    style Backend fill:#1a2b1a,stroke:#10b981,stroke-width:2px,color:#e2e8f0
+    style Database fill:#2b1a1a,stroke:#f59e0b,stroke-width:2px,color:#e2e8f0
+    style ReactSPA fill:#1e2740,stroke:#60a5fa,color:#e2e8f0
+    style Express fill:#1e3328,stroke:#34d399,color:#e2e8f0
+        </pre>
+      </div>
+    </div>
+
+    <!-- 3a. Sequence — Login Flow -->
+    <div class="diagram-card" data-card="2">
+      <div class="diagram-header">
+        <h2>Sequence Diagram — Login Flow</h2>
+        <span class="diagram-badge badge-blue">Sequence</span>
+      </div>
+      <div class="diagram-body">
+        <pre class="mermaid">
+sequenceDiagram
+    actor User as 👤 User (Browser)
+    participant LP as Login Page
+    participant AC as AuthContext
+    participant API as API Layer (Axios)
+    participant BE as Backend (auth.js)
+    participant DB as MySQL DB
+
+    User->>LP: Enter email + password
+    LP->>AC: authApi.login({ email, password })
+    AC->>API: POST /login
+    API->>BE: POST /login { email, password }
+
+    BE->>DB: SELECT * FROM teachers WHERE email = ?
+    alt Teacher Found
+        DB-->>BE: Teacher record
+        BE->>BE: bcrypt.compare(password, hash)
+        BE->>BE: Generate accessToken (JWT, 30m)
+        BE->>BE: Generate refreshToken (JWT, 7d)
+    else Teacher Not Found
+        DB-->>BE: No result
+        BE->>DB: SELECT * FROM students WHERE email = ?
+        DB-->>BE: Student record
+        BE->>BE: bcrypt.compare(password, hash)
+        BE->>BE: Generate accessToken (JWT, 30m)
+        BE->>BE: Generate refreshToken (JWT, 7d)
+    end
+
+    BE->>DB: DELETE FROM refresh_tokens WHERE user_id = ?
+    BE->>DB: INSERT INTO refresh_tokens (token, user_id, ...)
+    DB-->>BE: OK
+
+    BE-->>API: { accessToken, role, userType } + Set-Cookie: refreshToken (HttpOnly)
+    API-->>AC: Response data
+    AC->>AC: Store token in localStorage
+    AC->>AC: Set user state
+
+    alt Role = admin
+        AC-->>LP: Redirect → /admin
+    else Role = student
+        AC-->>LP: Redirect → /student/dashboard
+    else Role = faculty
+        AC-->>LP: Redirect → /teacher/dashboard
+    end
+        </pre>
+      </div>
+    </div>
+
+    <!-- 3b. Sequence — Token Refresh -->
+    <div class="diagram-card" data-card="3">
+      <div class="diagram-header">
+        <h2>Sequence Diagram — Token Refresh Flow</h2>
+        <span class="diagram-badge badge-blue">Sequence</span>
+      </div>
+      <div class="diagram-body">
+        <pre class="mermaid">
+sequenceDiagram
+    participant Client as 🖥️ Client (Axios)
+    participant Interceptor as Axios Interceptor
+    participant BE as Backend (auth.js)
+    participant DB as MySQL DB
+
+    Client->>BE: Original API Request (expired token)
+    BE-->>Client: 401 Unauthorized
+
+    Client->>Interceptor: Response interceptor detects 401
+    Interceptor->>BE: POST /login/refresh (with refreshToken cookie)
+    BE->>BE: Verify refresh token (JWT)
+    BE->>DB: SELECT * FROM refresh_tokens WHERE token = ?
+    DB-->>BE: Token record found
+    BE->>BE: Generate new accessToken (JWT, 30m)
+    BE-->>Interceptor: { accessToken }
+    Interceptor->>Interceptor: Update stored token
+    Interceptor->>BE: Retry original request with new accessToken
+    BE-->>Client: Original response data (200 OK)
+        </pre>
+      </div>
+    </div>
+
+    <!-- 3c. Sequence — Admin Creates Student -->
+    <div class="diagram-card" data-card="4">
+      <div class="diagram-header">
+        <h2>Sequence Diagram — Admin Creates Student</h2>
+        <span class="diagram-badge badge-blue">Sequence</span>
+      </div>
+      <div class="diagram-body">
+        <pre class="mermaid">
+sequenceDiagram
+    actor Admin as 👨‍💼 Admin
+    participant FE as Admin Dashboard
+    participant API as API Layer
+    participant BE as Backend (admin.js)
+    participant DB as MySQL DB
+
+    Admin->>FE: Fill student creation form
+    FE->>API: POST /admin/create_student
+    API->>BE: { student data }
+    BE->>BE: Validate fields
+    BE->>BE: Hash password (bcrypt)
+
+    BE->>DB: BEGIN TRANSACTION
+    BE->>DB: INSERT INTO students (...)
+    DB-->>BE: student_id
+
+    BE->>DB: INSERT INTO student_fees (student_id, total_fee=85000)
+    DB-->>BE: OK
+
+    BE->>DB: SELECT * FROM courses WHERE department_id=? AND semester=?
+    DB-->>BE: Matching courses list
+
+    loop For each course
+        BE->>DB: INSERT INTO enrollments (student_id, course_id, academic_year)
+    end
+
+    BE->>DB: COMMIT
+    DB-->>BE: Transaction committed
+
+    BE-->>API: { student_id }
+    API-->>FE: Success response
+    FE-->>Admin: Student created successfully
+        </pre>
+      </div>
+    </div>
+
+    <!-- 3d. Sequence — Faculty Takes Attendance -->
+    <div class="diagram-card" data-card="5">
+      <div class="diagram-header">
+        <h2>Sequence Diagram — Faculty Takes Attendance</h2>
+        <span class="diagram-badge badge-blue">Sequence</span>
+      </div>
+      <div class="diagram-body">
+        <pre class="mermaid">
+sequenceDiagram
+    actor Faculty as 👩‍🏫 Faculty
+    participant FE as Faculty Dashboard
+    participant API as API Layer
+    participant BE as Backend (teacher.js)
+    participant DB as MySQL DB
+
+    Faculty->>FE: Select course for attendance
+    FE->>API: POST /teacher/attendance/session
+    API->>BE: { course_id, session_date }
+    BE->>DB: INSERT INTO attendance_sessions (...)
+    DB-->>BE: session_id
+    BE-->>API: { session_id }
+    API-->>FE: Session created
+
+    FE->>API: GET /teacher/attendance/session/:session_id/students
+    API->>BE: Request enrolled students
+    BE->>DB: SELECT students enrolled in course (status=active)
+    DB-->>BE: Student list
+    BE-->>API: Student list
+    API-->>FE: Display students
+
+    Faculty->>FE: Mark attendance for each student
+    FE->>API: POST /teacher/attendance/submit
+    API->>BE: { session_id, attendance[] }
+
+    loop For each student
+        BE->>DB: INSERT INTO attendance_records (session_id, student_id, status)
+    end
+
+    DB-->>BE: All records inserted
+    BE-->>API: Success
+    API-->>FE: Attendance submitted
+    FE-->>Faculty: Confirmation message
+        </pre>
+      </div>
+    </div>
+
+    <!-- 3e. Sequence — Student Views Dashboard -->
+    <div class="diagram-card" data-card="6">
+      <div class="diagram-header">
+        <h2>Sequence Diagram — Student Views Dashboard</h2>
+        <span class="diagram-badge badge-blue">Sequence</span>
+      </div>
+      <div class="diagram-body">
+        <pre class="mermaid">
+sequenceDiagram
+    actor Student as 🎓 Student
+    participant FE as Student Dashboard
+    participant API as API Layer
+    participant BE as Backend (student.js)
+    participant DB as MySQL DB
+
+    Student->>FE: Navigate to dashboard
+    FE->>API: GET /student/dashboard (JWT Bearer)
+    API->>BE: Authenticated request
+
+    BE->>DB: SELECT student profile
+    DB-->>BE: Profile data
+
+    BE->>DB: SELECT enrolled subjects
+    DB-->>BE: Subjects list
+
+    BE->>DB: SELECT subject-wise attendance
+    DB-->>BE: Attendance per subject
+
+    BE->>DB: SELECT overall attendance percentage
+    DB-->>BE: Overall attendance
+
+    BE->>DB: SELECT fee record
+    DB-->>BE: Fee status
+
+    BE->>DB: SELECT timetable entries
+    DB-->>BE: Timetable data
+
+    BE-->>API: Aggregated dashboard data
+    API-->>FE: Dashboard response
+
+    FE->>FE: Render ProfileCard
+    FE->>FE: Render SubjectsCard
+    FE->>FE: Render AttendanceBarSection
+    FE->>FE: Render FeeCard
+    FE->>FE: Render TimetableTable
+    FE-->>Student: Dashboard displayed
+        </pre>
+      </div>
+    </div>
+
+    <!-- 4. Use Case Diagram -->
+    <div class="diagram-card" data-card="7">
+      <div class="diagram-header">
+        <h2>Use Case Diagram</h2>
+        <span class="diagram-badge badge-green">Use Case</span>
+      </div>
+      <div class="diagram-body">
+        <pre class="mermaid">
+graph LR
+    subgraph Actors[" Actors "]
+        Admin["Admin"]
+        Faculty["Faculty"]
+        Student["Student"]
+    end
+
+    subgraph AdminUC["Admin Use Cases"]
+        A1(["View Dashboard Stats"])
+        A2(["Create Department"])
+        A3(["Edit Department"])
+        A4(["Filter Teachers"])
+        A5(["Create Teacher"])
+        A6(["Edit Teacher"])
+        A7(["Delete Teacher"])
+        A8(["Filter Students"])
+        A9(["Create Student"])
+        A10(["Edit Student"])
+        A11(["Delete Student"])
+        A12(["Filter Courses"])
+        A13(["Create Course"])
+        A14(["Edit Course"])
+        A15(["Delete Course"])
+        A16(["View Timetable"])
+        A17(["Create Timetable Entry"])
+        A18(["Delete Timetable Entry"])
+        A19(["Manage Time Slots"])
+        A20(["Promote Students"])
+        A21(["Mark Student DC"])
+        A22(["Re-enroll DC Student"])
+    end
+
+    subgraph FacultyUC["Faculty Use Cases"]
+        F1(["View Dashboard"])
+        F2(["View Full Timetable"])
+        F3(["View Attendance Summary"])
+        F4(["View Student Attendance"])
+        F5(["View Assigned Courses"])
+        F6(["Create Attendance Session"])
+        F7(["View Eligible Students"])
+        F8(["Submit Attendance"])
+    end
+
+    subgraph StudentUC["Student Use Cases"]
+        S1(["Login"])
+        S2(["View Dashboard"])
+        S3(["View Subject Attendance"])
+        S4(["View Overall Attendance"])
+        S5(["View Fee Status"])
+        S6(["View Class Timetable"])
+    end
+
+    Admin --> A1
+    Admin --> A2
+    Admin --> A3
+    Admin --> A4
+    Admin --> A5
+    Admin --> A6
+    Admin --> A7
+    Admin --> A8
+    Admin --> A9
+    Admin --> A10
+    Admin --> A11
+    Admin --> A12
+    Admin --> A13
+    Admin --> A14
+    Admin --> A15
+    Admin --> A16
+    Admin --> A17
+    Admin --> A18
+    Admin --> A19
+    Admin --> A20
+    Admin --> A21
+    Admin --> A22
+
+    Faculty --> F1
+    Faculty --> F2
+    Faculty --> F3
+    Faculty --> F4
+    Faculty --> F5
+    Faculty --> F6
+    Faculty --> F7
+    Faculty --> F8
+
+    Student --> S1
+    Student --> S2
+    Student --> S3
+    Student --> S4
+    Student --> S5
+    Student --> S6
+
+    style Actors fill:#2d1b69,stroke:#7c3aed,color:#e2e8f0
+    style AdminUC fill:#1a2332,stroke:#3b82f6,color:#e2e8f0
+    style FacultyUC fill:#1a2b1a,stroke:#10b981,color:#e2e8f0
+    style StudentUC fill:#2b1a1a,stroke:#f59e0b,color:#e2e8f0
+        </pre>
+      </div>
+    </div>
+
+    <!-- 5. Deployment Diagram -->
+    <div class="diagram-card" data-card="8">
+      <div class="diagram-header">
+        <h2>Deployment Diagram</h2>
+        <span class="diagram-badge badge-green">Infrastructure</span>
+      </div>
+      <div class="diagram-body">
+        <pre class="mermaid">
+graph TB
+    subgraph ClientNode["🖥️ Client Browser"]
+        direction TB
+        ReactApp["React SPA<br/>(Vite build, port 5173 dev)"]
+        AxiosClient["Axios HTTP Client<br/>with interceptors"]
+        LS["LocalStorage<br/>JWT Access Token"]
+        ReactApp --> AxiosClient
+        ReactApp --> LS
+    end
+
+    subgraph ServerNode["⚙️ Backend Server"]
+        direction TB
+        NodeExpress["Node.js + Express<br/>(port 3000)"]
+        AuthMiddleware["Auth Middleware<br/>JWT verify"]
+        RoleMiddleware["Role Authorization<br/>Middleware"]
+        RouteHandlers["Route Handlers<br/>admin, auth, student, teacher"]
+        CookieRefresh["Cookie-based<br/>Refresh Token"]
+        NodeExpress --> AuthMiddleware
+        AuthMiddleware --> RoleMiddleware
+        RoleMiddleware --> RouteHandlers
+        NodeExpress --> CookieRefresh
+    end
+
+    subgraph DBNode["🗄️ MySQL Database"]
+        direction TB
+        MySQLDB["Database: clg_db<br/>(localhost)"]
+        Tables["11 Tables<br/>(see ER Diagram)"]
+        MySQLDB --> Tables
+    end
+
+    AxiosClient <-->|"HTTP/REST<br/>CORS enabled<br/>credentials: true"| NodeExpress
+    RouteHandlers <-->|"mysql2/promise<br/>connection pool<br/>limit: 10"| MySQLDB
+
+    style ClientNode fill:#1a2332,stroke:#3b82f6,stroke-width:2px,color:#e2e8f0
+    style ServerNode fill:#1a2b1a,stroke:#10b981,stroke-width:2px,color:#e2e8f0
+    style DBNode fill:#2b1a1a,stroke:#f59e0b,stroke-width:2px,color:#e2e8f0
+        </pre>
+      </div>
+    </div>
+
+    <!-- 6. Activity — Student Promotion Flow -->
+    <div class="diagram-card" data-card="9">
+      <div class="diagram-header">
+        <h2>Activity Diagram — Student Promotion Flow</h2>
+        <span class="diagram-badge badge-orange">Activity</span>
+      </div>
+      <div class="diagram-body">
+        <pre class="mermaid">
+flowchart TD
+    Start([🟢 START]) --> SelectParams["Admin selects<br/>department_id + current_semester<br/>+ new_academic_year"]
+    SelectParams --> FetchStudents["Fetch all active students<br/>in dept + semester"]
+    FetchStudents --> ForEach{"FOR EACH<br/>student"}
+
+    ForEach --> CheckSem{"semester == 8?"}
+
+    CheckSem -->|Yes| Graduate["Mark status = 'graduated'"]
+    Graduate --> NextStudent["NEXT student"]
+
+    CheckSem -->|No| CalcNew["Calculate:<br/>newSemester = current + 1<br/>newYear = ceil(newSem / 2)"]
+    CalcNew --> UpdateStudent["UPDATE student<br/>(semester, year, academic_year)"]
+    UpdateStudent --> SelectCourses["SELECT courses<br/>for new semester"]
+    SelectCourses --> InsertEnroll["INSERT enrollments<br/>for each course"]
+    InsertEnroll --> InsertFee["INSERT new fee record<br/>(total_fee = 85000)"]
+    InsertFee --> NextStudent
+
+    NextStudent --> MoreStudents{"More students?"}
+    MoreStudents -->|Yes| ForEach
+    MoreStudents -->|No| Commit["COMMIT transaction"]
+    Commit --> ReturnSuccess["Return success message"]
+    ReturnSuccess --> End([🔴 END])
+
+    style Start fill:#10b981,stroke:#059669,color:white
+    style End fill:#ef4444,stroke:#dc2626,color:white
+    style CheckSem fill:#7c3aed,stroke:#6d28d9,color:white
+    style MoreStudents fill:#7c3aed,stroke:#6d28d9,color:white
+    style ForEach fill:#3b82f6,stroke:#2563eb,color:white
+    style Graduate fill:#f59e0b,stroke:#d97706,color:white
+    style Commit fill:#10b981,stroke:#059669,color:white
+        </pre>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="footer">
+    College ERP System — UML Diagrams &bull; Generated with Mermaid.js
+  </div>
+
+  <script>
+    // Initialize Mermaid
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'dark',
+      themeVariables: {
+        darkMode: true,
+        background: '#1a1d27',
+        primaryColor: '#7c3aed',
+        primaryTextColor: '#e2e8f0',
+        primaryBorderColor: '#4c1d95',
+        lineColor: '#6366f1',
+        secondaryColor: '#1e293b',
+        tertiaryColor: '#0f172a',
+        fontFamily: 'Inter, sans-serif',
+        fontSize: '14px',
+        noteBkgColor: '#1e1b4b',
+        noteTextColor: '#e2e8f0',
+        noteBorderColor: '#4c1d95',
+        actorBkg: '#312e81',
+        actorTextColor: '#e2e8f0',
+        actorBorder: '#6366f1',
+        signalColor: '#e2e8f0',
+        signalTextColor: '#e2e8f0',
+        labelBoxBkgColor: '#1e1b4b',
+        labelBoxBorderColor: '#4c1d95',
+        labelTextColor: '#e2e8f0',
+        loopTextColor: '#a78bfa',
+        activationBorderColor: '#7c3aed',
+        activationBkgColor: '#312e81',
+        sequenceNumberColor: '#e2e8f0'
+      },
+      flowchart: { curve: 'basis', useMaxWidth: true },
+      sequence: { useMaxWidth: true, actorMargin: 80, messageMargin: 40 },
+      er: { useMaxWidth: true, fontSize: 12 }
+    });
+
+    // Tab switching
+    const tabs = document.querySelectorAll('.tab');
+    const cards = document.querySelectorAll('.diagram-card');
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const target = tab.dataset.tab;
+
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+
+        cards.forEach(c => {
+          c.classList.remove('active');
+          if (c.dataset.card === target) {
+            c.classList.add('active');
+          }
+        });
+      });
+    });
+  </script>
+</body>
+</html>
