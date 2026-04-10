@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '@/context/ThemeContext';
 import { useStudents, useDepartments } from '@/hooks';
-import { DataTable, Modal, FormInput, ConfirmDialog, FormSelect } from '@/components/common';
+import { DataTable, Modal, FormInput, ConfirmDialog, FormSelect, BulkCreateStudents } from '@/components/common';
 import { Button } from '@/components/ui/button';
-import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Users } from 'lucide-react';
 import { useSocket } from '@/context/SocketContext';
 import { validateStudentForm } from '@/utils/validation';
 import type { Student } from '@/types';
@@ -29,7 +29,7 @@ const SEMESTER_OPTIONS = [
 export const ManageStudents: React.FC = () => {
   const { theme } = useTheme();
   const { departments } = useDepartments();
-  const { students, isLoading, fetchFilteredStudents, createStudent, editStudent, deleteStudent, markDetained } = useStudents();
+  const { students, isLoading, fetchFilteredStudents, createStudent, bulkCreateStudents, editStudent, deleteStudent, markDetained } = useStudents();
 
   const [filters, setFilters] = useState({
     department_id: '',
@@ -39,6 +39,7 @@ export const ManageStudents: React.FC = () => {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
 
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -266,6 +267,15 @@ export const ManageStudents: React.FC = () => {
             className="w-48"
           />
           <Button
+            variant="outline"
+            onClick={() => setIsBulkModalOpen(true)}
+            className="rounded-lg gap-2"
+            style={{ borderColor: theme.primary, color: theme.primary }}
+          >
+            <Users className="w-4 h-4" />
+            Bulk Create
+          </Button>
+          <Button
             onClick={handleOpenCreate}
             className="rounded-lg text-white"
             style={{ background: theme.gradient }}
@@ -431,6 +441,13 @@ export const ManageStudents: React.FC = () => {
         variant="danger"
       />
 
+      {/* Bulk Create Modal */}
+      <BulkCreateStudents
+        isOpen={isBulkModalOpen}
+        onClose={() => setIsBulkModalOpen(false)}
+        departments={departments}
+        onBulkCreate={bulkCreateStudents}
+      />
 
     </div >
   );

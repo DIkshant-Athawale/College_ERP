@@ -153,6 +153,15 @@ export interface DetainStudentRequest {
   academic_year: string;
 }
 
+export interface BulkCreateStudentsResponse {
+  message: string;
+  total: number;
+  created: number;
+  failed_count: number;
+  success: { row: number; student_id: number; email: string }[];
+  failed: { row: number; email: string; reason: string }[];
+}
+
 // Timetable Types
 export interface TimetableSlot {
   timetable_id: number;

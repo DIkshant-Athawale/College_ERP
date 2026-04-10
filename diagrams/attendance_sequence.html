@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3d. Faculty Takes Attendance - Sequence Diagram</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #000000;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 40px 20px;
+            font-family: 'Segoe UI', 'Consolas', monospace;
+        }
+        .diagram-container {
+            background: #000000;
+            padding: 40px 50px;
+            max-width: 1200px;
+            width: 100%;
+        }
+        .title {
+            text-align: center;
+            color: #ffffff;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 40px;
+            letter-spacing: 0.5px;
+        }
+        svg {
+            width: 100%;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="diagram-container">
+        <div class="title">3d. Faculty Takes Attendance</div>
+        <svg viewBox="0 0 1100 1350" xmlns="http://www.w3.org/2000/svg" font-family="'Segoe UI', 'Consolas', monospace">
+            <defs>
+                <marker id="arrowSolid" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+                    <polygon points="0 0, 10 3.5, 0 7" fill="#5ecfcf"/>
+                </marker>
+                <marker id="arrowDashed" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+                    <polygon points="0 0, 10 3.5, 0 7" fill="#7ddf7d"/>
+                </marker>
+                <marker id="arrowYellow" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+                    <polygon points="0 0, 10 3.5, 0 7" fill="#e8d44d"/>
+                </marker>
+                <marker id="arrowYellowLeft" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto-start-reverse">
+                    <polygon points="0 0, 10 3.5, 0 7" fill="#e8d44d"/>
+                </marker>
+                <marker id="arrowDashedLeft" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto-start-reverse">
+                    <polygon points="0 0, 10 3.5, 0 7" fill="#7ddf7d"/>
+                </marker>
+            </defs>
+
+            <!-- Column positions -->
+            <!-- Faculty: 90, FE: 300, API: 510, BE: 720, DB: 950 -->
+
+            <!-- ===== PARTICIPANT BOXES (TOP) ===== -->
+            <!-- Faculty Actor -->
+            <circle cx="90" cy="25" r="12" stroke="#9aa0a6" stroke-width="1.5" fill="none"/>
+            <line x1="90" y1="37" x2="90" y2="60" stroke="#9aa0a6" stroke-width="1.5"/>
+            <line x1="70" y1="46" x2="110" y2="46" stroke="#9aa0a6" stroke-width="1.5"/>
+            <line x1="90" y1="60" x2="72" y2="80" stroke="#9aa0a6" stroke-width="1.5"/>
+            <line x1="90" y1="60" x2="108" y2="80" stroke="#9aa0a6" stroke-width="1.5"/>
+            <text x="90" y="100" text-anchor="middle" fill="#ffffff" font-size="14" font-weight="600">Faculty</text>
+
+            <!-- FE Box -->
+            <rect x="210" y="12" rx="6" ry="6" width="180" height="45" fill="none" stroke="#5ecfcf" stroke-width="1.5"/>
+            <text x="300" y="30" text-anchor="middle" fill="#5ecfcf" font-size="11" font-weight="700">FE</text>
+            <text x="300" y="48" text-anchor="middle" fill="#ffffff" font-size="12">FacultyDashboard</text>
+
+            <!-- API Box -->
+            <rect x="430" y="12" rx="6" ry="6" width="160" height="45" fill="none" stroke="#a78bfa" stroke-width="1.5"/>
+            <text x="510" y="30" text-anchor="middle" fill="#a78bfa" font-size="11" font-weight="700">API</text>
+            <text x="510" y="48" text-anchor="middle" fill="#ffffff" font-size="12">API Layer</text>
+
+            <!-- BE Box -->
+            <rect x="630" y="12" rx="6" ry="6" width="180" height="45" fill="none" stroke="#4ade80" stroke-width="1.5"/>
+            <text x="720" y="30" text-anchor="middle" fill="#4ade80" font-size="11" font-weight="700">BE</text>
+            <text x="720" y="48" text-anchor="middle" fill="#ffffff" font-size="12">Backend (teacher.js)</text>
+
+            <!-- DB Box -->
+            <rect x="870" y="12" rx="6" ry="6" width="160" height="45" fill="none" stroke="#f59e0b" stroke-width="1.5"/>
+            <text x="950" y="30" text-anchor="middle" fill="#f59e0b" font-size="11" font-weight="700">DB</text>
+            <text x="950" y="48" text-anchor="middle" fill="#ffffff" font-size="12">MySQL</text>
+
+            <!-- ===== LIFELINES ===== -->
+            <line x1="90" y1="110" x2="90" y2="1240" stroke="#3a3a3a" stroke-width="1" stroke-dasharray="6,4"/>
+            <line x1="300" y1="57" x2="300" y2="1240" stroke="#3a3a3a" stroke-width="1" stroke-dasharray="6,4"/>
+            <line x1="510" y1="57" x2="510" y2="1240" stroke="#3a3a3a" stroke-width="1" stroke-dasharray="6,4"/>
+            <line x1="720" y1="57" x2="720" y2="1240" stroke="#3a3a3a" stroke-width="1" stroke-dasharray="6,4"/>
+            <line x1="950" y1="57" x2="950" y2="1240" stroke="#3a3a3a" stroke-width="1" stroke-dasharray="6,4"/>
+
+            <!-- ===== PHASE 1: CREATE SESSION ===== -->
+
+            <!-- 1. Faculty -> FE: Select course + date -->
+            <line x1="90" y1="150" x2="295" y2="150" stroke="#5ecfcf" stroke-width="1.5" marker-end="url(#arrowSolid)"/>
+            <text x="30" y="145" fill="#5ecfcf" font-size="11" font-style="italic">Select course + date</text>
+
+            <!-- 2. FE -> API: POST /teacher/attendance/session -->
+            <line x1="305" y1="190" x2="505" y2="190" stroke="#5ecfcf" stroke-width="1.5" marker-end="url(#arrowSolid)"/>
+            <text x="310" y="183" fill="#5ecfcf" font-size="11">POST /teacher/attendance/session</text>
+
+            <!-- 3. API -> BE: { course_id, session_date } -->
+            <line x1="515" y1="230" x2="715" y2="230" stroke="#5ecfcf" stroke-width="1.5" marker-end="url(#arrowSolid)"/>
+            <text x="540" y="223" fill="#ffffff" font-size="11">{ course_id, session_date }</text>
+
+            <!-- 4. BE self-loop: Verify teacher owns course -->
+            <path d="M 725 270 L 780 270 L 780 290 L 725 290" stroke="#e8d44d" stroke-width="1.2" fill="none" marker-end="url(#arrowYellow)"/>
+            <text x="790" y="284" fill="#e8d44d" font-size="11">Verify teacher owns course</text>
+
+            <!-- 5. BE self-loop: Get academic_year from enrollments -->
+            <path d="M 725 320 L 780 320 L 780 340 L 725 340" stroke="#e8d44d" stroke-width="1.2" fill="none" marker-end="url(#arrowYellow)"/>
+            <text x="790" y="334" fill="#e8d44d" font-size="11">Get academic_year from enrollments</text>
+
+            <!-- 6. BE -> DB: INSERT INTO attendance_sessions -->
+            <line x1="725" y1="380" x2="945" y2="380" stroke="#e8d44d" stroke-width="1.2" marker-end="url(#arrowYellow)"/>
+            <text x="740" y="373" fill="#e8d44d" font-size="11">INSERT INTO attendance_sessions</text>
+
+            <!-- 7. DB --> BE: session_id -->
+            <line x1="945" y1="420" x2="725" y2="420" stroke="#7ddf7d" stroke-width="1.2" stroke-dasharray="6,3" marker-end="url(#arrowDashed)"/>
+            <text x="815" y="413" fill="#7ddf7d" font-size="11">session_id</text>
+
+            <!-- 8. BE --> FE: { session_id } -->
+            <line x1="715" y1="460" x2="305" y2="460" stroke="#7ddf7d" stroke-width="1.2" stroke-dasharray="6,3" marker-end="url(#arrowDashed)"/>
+            <text x="460" y="453" fill="#7ddf7d" font-size="11">{ session_id }</text>
+
+            <!-- ===== PHASE 2: GET STUDENTS ===== -->
+            <!-- Separator -->
+            <line x1="40" y1="500" x2="1060" y2="500" stroke="#2a2a2a" stroke-width="0.5" stroke-dasharray="2,4"/>
+
+            <!-- 9. FE -> API: GET /teacher/attendance/session/:session_id/students -->
+            <line x1="305" y1="540" x2="505" y2="540" stroke="#5ecfcf" stroke-width="1.5" marker-end="url(#arrowSolid)"/>
+            <text x="310" y="533" fill="#5ecfcf" font-size="10">GET /teacher/attendance/session/:session_id/students</text>
+
+            <!-- 10. API -> BE: request -->
+            <line x1="515" y1="580" x2="715" y2="580" stroke="#5ecfcf" stroke-width="1.5" marker-end="url(#arrowSolid)"/>
+            <text x="590" y="573" fill="#ffffff" font-size="11">request</text>
+
+            <!-- 11. BE -> DB: SELECT active enrolled students -->
+            <line x1="725" y1="620" x2="945" y2="620" stroke="#e8d44d" stroke-width="1.2" marker-end="url(#arrowYellow)"/>
+            <text x="740" y="613" fill="#e8d44d" font-size="11">SELECT active enrolled students</text>
+
+            <!-- 12. DB --> BE: students[] -->
+            <line x1="945" y1="660" x2="725" y2="660" stroke="#7ddf7d" stroke-width="1.2" stroke-dasharray="6,3" marker-end="url(#arrowDashed)"/>
+            <text x="810" y="653" fill="#7ddf7d" font-size="11">students[]</text>
+
+            <!-- 13. BE --> FE: { students } -->
+            <line x1="715" y1="700" x2="305" y2="700" stroke="#7ddf7d" stroke-width="1.2" stroke-dasharray="6,3" marker-end="url(#arrowDashed)"/>
+            <text x="470" y="693" fill="#7ddf7d" font-size="11">{ students }</text>
+
+            <!-- ===== PHASE 3: SUBMIT ATTENDANCE ===== -->
+            <!-- Separator -->
+            <line x1="40" y1="740" x2="1060" y2="740" stroke="#2a2a2a" stroke-width="0.5" stroke-dasharray="2,4"/>
+
+            <!-- 14. Faculty -> FE: Mark each student present/absent -->
+            <line x1="95" y1="780" x2="295" y2="780" stroke="#5ecfcf" stroke-width="1.5" marker-end="url(#arrowSolid)"/>
+            <text x="15" y="773" fill="#5ecfcf" font-size="10" font-style="italic">Mark each student present/absent</text>
+
+            <!-- 15. FE -> API: POST /teacher/attendance/submit -->
+            <line x1="305" y1="820" x2="505" y2="820" stroke="#5ecfcf" stroke-width="1.5" marker-end="url(#arrowSolid)"/>
+            <text x="310" y="813" fill="#5ecfcf" font-size="11">POST /teacher/attendance/submit</text>
+
+            <!-- 16. API -> BE: { session_id, attendance[] } -->
+            <line x1="515" y1="860" x2="715" y2="860" stroke="#5ecfcf" stroke-width="1.5" marker-end="url(#arrowSolid)"/>
+            <text x="530" y="853" fill="#ffffff" font-size="11">{ session_id, attendance[] }</text>
+
+            <!-- 17. BE -> DB: BEGIN TRANSACTION -->
+            <line x1="725" y1="900" x2="945" y2="900" stroke="#e8d44d" stroke-width="1.2" marker-end="url(#arrowYellow)"/>
+            <text x="780" y="893" fill="#e8d44d" font-size="11">BEGIN TRANSACTION</text>
+
+            <!-- 18. BE self-loop: INSERT INTO attendance_records (batch) -->
+            <path d="M 725 940 L 780 940 L 780 960 L 725 960" stroke="#e8d44d" stroke-width="1.2" fill="none" marker-end="url(#arrowYellow)"/>
+            <text x="790" y="954" fill="#e8d44d" font-size="11">INSERT INTO attendance_records (batch)</text>
+
+            <!-- 19. BE -> DB: COMMIT -->
+            <line x1="725" y1="1000" x2="945" y2="1000" stroke="#e8d44d" stroke-width="1.2" marker-end="url(#arrowYellow)"/>
+            <text x="808" y="993" fill="#e8d44d" font-size="11">COMMIT</text>
+
+            <!-- 20. BE --> FE: "Attendance submitted successfully" -->
+            <line x1="715" y1="1060" x2="305" y2="1060" stroke="#7ddf7d" stroke-width="1.2" stroke-dasharray="6,3" marker-end="url(#arrowDashed)"/>
+            <text x="390" y="1053" fill="#7ddf7d" font-size="11">"Attendance submitted successfully"</text>
+
+            <!-- ===== PARTICIPANT BOXES (BOTTOM) ===== -->
+            <!-- Faculty Actor -->
+            <circle cx="90" cy="1270" r="12" stroke="#9aa0a6" stroke-width="1.5" fill="none"/>
+            <line x1="90" y1="1282" x2="90" y2="1305" stroke="#9aa0a6" stroke-width="1.5"/>
+            <line x1="70" y1="1291" x2="110" y2="1291" stroke="#9aa0a6" stroke-width="1.5"/>
+            <line x1="90" y1="1305" x2="72" y2="1325" stroke="#9aa0a6" stroke-width="1.5"/>
+            <line x1="90" y1="1305" x2="108" y2="1325" stroke="#9aa0a6" stroke-width="1.5"/>
+            <text x="90" y="1345" text-anchor="middle" fill="#ffffff" font-size="14" font-weight="600">Faculty</text>
+
+            <!-- FE Box Bottom -->
+            <rect x="210" y="1255" rx="6" ry="6" width="180" height="45" fill="none" stroke="#5ecfcf" stroke-width="1.5"/>
+            <text x="300" y="1273" text-anchor="middle" fill="#5ecfcf" font-size="11" font-weight="700">FE</text>
+            <text x="300" y="1291" text-anchor="middle" fill="#ffffff" font-size="12">FacultyDashboard</text>
+
+            <!-- API Box Bottom -->
+            <rect x="430" y="1255" rx="6" ry="6" width="160" height="45" fill="none" stroke="#a78bfa" stroke-width="1.5"/>
+            <text x="510" y="1273" text-anchor="middle" fill="#a78bfa" font-size="11" font-weight="700">API</text>
+            <text x="510" y="1291" text-anchor="middle" fill="#ffffff" font-size="12">API Layer</text>
+
+            <!-- BE Box Bottom -->
+            <rect x="630" y="1255" rx="6" ry="6" width="180" height="45" fill="none" stroke="#4ade80" stroke-width="1.5"/>
+            <text x="720" y="1273" text-anchor="middle" fill="#4ade80" font-size="11" font-weight="700">BE</text>
+            <text x="720" y="1291" text-anchor="middle" fill="#ffffff" font-size="12">Backend (teacher.js)</text>
+
+            <!-- DB Box Bottom -->
+            <rect x="870" y="1255" rx="6" ry="6" width="160" height="45" fill="none" stroke="#f59e0b" stroke-width="1.5"/>
+            <text x="950" y="1273" text-anchor="middle" fill="#f59e0b" font-size="11" font-weight="700">DB</text>
+            <text x="950" y="1291" text-anchor="middle" fill="#ffffff" font-size="12">MySQL</text>
+
+            <!-- ===== LEGEND ===== -->
+            <!--
+            <rect x="40" y="1370" rx="4" ry="4" width="300" height="80" fill="#111111" stroke="#2a2a2a" stroke-width="1"/>
+            <text x="55" y="1390" fill="#ffffff" font-size="11" font-weight="600">Legend:</text>
+            <line x1="55" y1="1410" x2="100" y2="1410" stroke="#5ecfcf" stroke-width="1.5"/>
+            <text x="110" y="1414" fill="#9aa0a6" font-size="10">Request</text>
+            <line x1="170" y1="1410" x2="215" y2="1410" stroke="#7ddf7d" stroke-width="1.5" stroke-dasharray="6,3"/>
+            <text x="225" y="1414" fill="#9aa0a6" font-size="10">Response</text>
+            <line x1="55" y1="1435" x2="100" y2="1435" stroke="#e8d44d" stroke-width="1.2"/>
+            <text x="110" y="1439" fill="#9aa0a6" font-size="10">DB Operation</text>
+            -->
+        </svg>
+    </div>
+</body>
+</html>

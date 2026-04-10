@@ -1049,6 +1049,123 @@ router.post("/create_student", authenticate, authorize("admin"), async (req, res
 }
 )
 
+// Bulk create students — per-row error reporting
+router.post("/bulk_create_students", authenticate, authorize("admin"), async (req, res) => {
+  const conn = await pool.getConnection();
+
+  try {
+    const students = req.body.students;
+
+    if (!Array.isArray(students) || students.length === 0) {
+      return res.status(400).json({ message: "No student data provided" });
+    }
+
+    if (students.length > 500) {
+      return res.status(400).json({ message: "Maximum 500 students per batch" });
+    }
+
+    await conn.beginTransaction();
+
+    const results = { success: [], failed: [] };
+
+    for (let i = 0; i < students.length; i++) {
+      const student = students[i];
+      const rowNum = i + 1;
+
+      try {
+        const {
+          first_name, middle_name, last_name, DOB,
+          year, semester, email, primary_phone,
+          alternate_phone, department_id, password, academic_year
+        } = student;
+
+        // Validation
+        if (!first_name || !last_name || !email || !year || !semester || !primary_phone || !department_id || !password || !academic_year) {
+          results.failed.push({ row: rowNum, email: email || `Row ${rowNum}`, reason: "Required fields missing" });
+          continue;
+        }
+
+        const numYear = Number(year);
+        const numSem = Number(semester);
+
+        if (numYear < 1 || numYear > 4) {
+          results.failed.push({ row: rowNum, email, reason: "Invalid year (must be 1-4)" });
+          continue;
+        }
+
+        const minSem = (numYear - 1) * 2 + 1;
+        const maxSem = numYear * 2;
+        if (numSem < minSem || numSem > maxSem) {
+          results.failed.push({ row: rowNum, email, reason: `Invalid semester for year ${numYear} (expected ${minSem}-${maxSem})` });
+          continue;
+        }
+
+        // Hash password
+        const saltRounds = 10;
+        const hashedPassword = await bcrypt.hash(String(password), saltRounds);
+
+        // Insert student
+        const [result] = await conn.execute(
+          `INSERT INTO students
+            (first_name, middle_name, last_name, DOB, year, semester, email, primary_phone, alternate_phone, department_id, password, academic_year)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            first_name.trim(), middle_name?.trim() || null, last_name.trim(),
+            DOB || null, numYear, numSem, email.trim(),
+            String(primary_phone).trim(), alternate_phone ? String(alternate_phone).trim() : null,
+            Number(department_id), hashedPassword, academic_year.trim()
+          ]
+        );
+
+        const studentId = result.insertId;
+
+        // Insert fee record
+        await conn.execute(
+          `INSERT INTO student_fees (student_id, academic_year, total_fee) VALUES (?, ?, ?)`,
+          [studentId, academic_year.trim(), 85000]
+        );
+
+        // Auto-enroll in core courses
+        const [courses] = await conn.execute(
+          `SELECT course_id FROM courses WHERE department_id = ? AND year = ? AND semester = ? AND subject_type = 'core'`,
+          [Number(department_id), numYear, numSem]
+        );
+
+        if (courses.length > 0) {
+          const enroll = courses.map(c => [studentId, c.course_id, academic_year.trim()]);
+          await conn.query(`INSERT INTO enrollments (student_id, course_id, academic_year) VALUES ?`, [enroll]);
+        }
+
+        results.success.push({ row: rowNum, student_id: studentId, email: email.trim() });
+
+      } catch (rowError) {
+        if (rowError.code === "ER_DUP_ENTRY") {
+          results.failed.push({ row: rowNum, email: student.email || `Row ${rowNum}`, reason: "Email already registered" });
+        } else {
+          results.failed.push({ row: rowNum, email: student.email || `Row ${rowNum}`, reason: rowError.message || "Unknown error" });
+        }
+      }
+    }
+
+    await conn.commit();
+
+    res.status(201).json({
+      message: `Bulk import complete: ${results.success.length} created, ${results.failed.length} failed`,
+      total: students.length,
+      created: results.success.length,
+      failed_count: results.failed.length,
+      success: results.success,
+      failed: results.failed,
+    });
+
+  } catch (error) {
+    await conn.rollback();
+    console.error(error);
+    res.status(500).json({ message: "Internal server error" });
+  } finally {
+    conn.release();
+  }
+});
 
 //get filtered teacher
 router.get(

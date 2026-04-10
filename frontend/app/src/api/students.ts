@@ -6,7 +6,8 @@ import type {
   StudentsResponse,
   StudentFilters,
   PromoteStudentsRequest,
-  DetainStudentRequest
+  DetainStudentRequest,
+  BulkCreateStudentsResponse,
 } from '@/types';
 
 export const studentsApi = {
@@ -28,6 +29,11 @@ export const studentsApi = {
   create: async (data: CreateStudentRequest): Promise<{ affectedRows: number; message?: string }> => {
     // Backend expects an array or single object, but singular endpoint is /create_student
     const response = await apiClient.post('/admin/create_student', data);
+    return response.data;
+  },
+
+  bulkCreate: async (students: CreateStudentRequest[]): Promise<BulkCreateStudentsResponse> => {
+    const response = await apiClient.post('/admin/bulk_create_students', { students });
     return response.data;
   },
 

@@ -6,7 +6,8 @@ import type {
   EditStudentRequest,
   StudentFilters,
   PromoteStudentsRequest,
-  DetainStudentRequest
+  DetainStudentRequest,
+  BulkCreateStudentsResponse,
 } from '@/types';
 import { toast } from 'sonner';
 
@@ -51,6 +52,22 @@ export const useStudents = () => {
       return true;
     } catch (err) {
       return false;
+    }
+  };
+
+  const bulkCreateStudents = async (data: CreateStudentRequest[]): Promise<BulkCreateStudentsResponse | null> => {
+    try {
+      const result = await studentsApi.bulkCreate(data);
+      if (result.created > 0) {
+        toast.success(`${result.created} student(s) created successfully!`);
+      }
+      if (result.failed_count > 0) {
+        toast.warning(`${result.failed_count} student(s) failed to import.`);
+      }
+      await fetchStudents();
+      return result;
+    } catch (err) {
+      return null;
     }
   };
 
@@ -128,11 +145,11 @@ export const useStudents = () => {
     dcStudents,
     fetchDcStudents,
     isLoading,
-
     error,
     fetchStudents,
     fetchFilteredStudents,
     createStudent,
+    bulkCreateStudents,
     editStudent,
     deleteStudent,
     promoteStudents,

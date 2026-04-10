@@ -8,4 +8,5 @@ export { LoadingSpinner } from './LoadingSpinner';
 export { ErrorComponent } from './ErrorComponent';
 export { NoticeMarquee } from './NoticeMarquee';
 export { NoticeFormModal } from './NoticeFormModal';
+export { BulkCreateStudents } from './BulkCreateStudents';
 
