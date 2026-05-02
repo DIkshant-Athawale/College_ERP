@@ -1,18 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '@/context/ThemeContext';
 import { useTeachers, useDepartments } from '@/hooks';
-import { DataTable, Modal, FormInput, ConfirmDialog, FormSelect } from '@/components/common';
+import { DataTable, Modal, FormInput, ConfirmDialog, FormSelect, BulkCreateTeachers } from '@/components/common';
 import { Button } from '@/components/ui/button';
 import { Plus, Pencil, Trash2, Users } from 'lucide-react';
 import { useSocket } from '@/context/SocketContext';
-import { Input } from '@/components/ui/input';
 import { validateTeacherForm } from '@/utils/validation';
-import type { Teacher, CreateTeacherRequest } from '@/types';
+import type { Teacher } from '@/types';
 
 export const ManageTeachers: React.FC = () => {
   const { theme } = useTheme();
   const { departments } = useDepartments();
-  const { teachers, isLoading, fetchTeachersByDepartment, createTeachers, editTeacher, deleteTeacher } = useTeachers();
+  const { teachers, isLoading, fetchTeachersByDepartment, createTeachers, bulkCreateTeachers, editTeacher, deleteTeacher } = useTeachers();
 
   const [selectedDepartment, setSelectedDepartment] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -31,10 +30,6 @@ export const ManageTeachers: React.FC = () => {
     designation: '',
     password: '',
   });
-
-  const [bulkTeachers, setBulkTeachers] = useState<CreateTeacherRequest[]>([
-    { first_name: '', last_name: '', email: '', primary_phone: '', alternate_phone: '', department_id: '', designation: '', password: '' },
-  ]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -78,14 +73,6 @@ export const ManageTeachers: React.FC = () => {
     });
     setErrors({});
     setIsModalOpen(true);
-  };
-
-  const handleOpenBulkCreate = () => {
-    setBulkTeachers([
-      { first_name: '', last_name: '', email: '', primary_phone: '', alternate_phone: '', department_id: '', designation: '', password: '' },
-    ]);
-    setErrors({});
-    setIsBulkModalOpen(true);
   };
 
   const handleOpenEdit = (teacher: Teacher) => {
@@ -132,57 +119,6 @@ export const ManageTeachers: React.FC = () => {
     if (success) {
       setIsModalOpen(false);
     }
-  };
-
-  const handleBulkSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    // Validate all teachers
-    const allErrors: Record<string, string>[] = [];
-    let hasErrors = false;
-
-    bulkTeachers.forEach((teacher, index) => {
-      const validationErrors = validateTeacherForm(teacher as {
-        first_name: string;
-        last_name: string;
-        email: string;
-        primary_phone: string;
-        department_id: string;
-        designation: string;
-        password: string;
-      });
-      allErrors[index] = validationErrors;
-      if (Object.keys(validationErrors).length > 0) {
-        hasErrors = true;
-      }
-    });
-
-    if (hasErrors) {
-      setErrors({ bulk: 'Please fix validation errors in all rows' });
-      return;
-    }
-
-    setIsSubmitting(true);
-    const success = await createTeachers(bulkTeachers);
-    setIsSubmitting(false);
-
-    if (success) {
-      setIsBulkModalOpen(false);
-    }
-  };
-
-  const addBulkRow = () => {
-    setBulkTeachers([...bulkTeachers, { first_name: '', last_name: '', email: '', primary_phone: '', alternate_phone: '', department_id: '', designation: '', password: '' }]);
-  };
-
-  const removeBulkRow = (index: number) => {
-    setBulkTeachers(bulkTeachers.filter((_, i) => i !== index));
-  };
-
-  const updateBulkRow = (index: number, field: keyof CreateTeacherRequest, value: string) => {
-    const updated = [...bulkTeachers];
-    updated[index] = { ...updated[index], [field]: value };
-    setBulkTeachers(updated);
   };
 
   const handleConfirmDelete = async () => {
@@ -258,12 +194,13 @@ export const ManageTeachers: React.FC = () => {
             placeholder="Filter by Department"
           />
           <Button
-            onClick={handleOpenBulkCreate}
+            onClick={() => setIsBulkModalOpen(true)}
             variant="outline"
             className="rounded-lg"
+            style={{ borderColor: theme.primary, color: theme.primary }}
           >
             <Users className="w-4 h-4 mr-2" />
-            Bulk Create
+            Bulk CSV Upload
           </Button>
           <Button
             onClick={handleOpenCreate}
@@ -379,107 +316,13 @@ export const ManageTeachers: React.FC = () => {
         </form>
       </Modal>
 
-      {/* Bulk Create Modal */}
-      <Modal
+      {/* Bulk CSV Upload Modal */}
+      <BulkCreateTeachers
         isOpen={isBulkModalOpen}
         onClose={() => setIsBulkModalOpen(false)}
-        title="Bulk Create Teachers"
-        maxWidth="max-w-4xl"
-      >
-        <form onSubmit={handleBulkSubmit} className="space-y-4">
-          {errors.bulk && (
-            <p className="text-sm text-red-500">{errors.bulk}</p>
-          )}
-          <div className="max-h-96 overflow-y-auto space-y-4">
-            {bulkTeachers.map((teacher, index) => (
-              <div key={index} className="p-4 border rounded-lg space-y-3" style={{ borderColor: theme.border }}>
-                <div className="flex items-center justify-between">
-                  <span className="font-medium" style={{ color: theme.text }}>Teacher {index + 1}</span>
-                  {bulkTeachers.length > 1 && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeBulkRow(index)}
-                      className="text-red-500"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  )}
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <Input
-                    placeholder="First Name"
-                    value={teacher.first_name}
-                    onChange={(e) => updateBulkRow(index, 'first_name', e.target.value)}
-                  />
-                  <Input
-                    placeholder="Last Name"
-                    value={teacher.last_name}
-                    onChange={(e) => updateBulkRow(index, 'last_name', e.target.value)}
-                  />
-                  <Input
-                    placeholder="Email"
-                    type="email"
-                    value={teacher.email}
-                    onChange={(e) => updateBulkRow(index, 'email', e.target.value)}
-                  />
-                  <Input
-                    placeholder="Primary Phone"
-                    value={teacher.primary_phone}
-                    onChange={(e) => updateBulkRow(index, 'primary_phone', e.target.value)}
-                  />
-                  <FormSelect
-                    label=""
-                    value={String(teacher.department_id)}
-                    onChange={(value) => updateBulkRow(index, 'department_id', value)}
-                    options={departmentOptions}
-                    placeholder="Select Department"
-                  />
-                  <Input
-                    placeholder="Designation"
-                    value={teacher.designation}
-                    onChange={(e) => updateBulkRow(index, 'designation', e.target.value)}
-                  />
-                  <Input
-                    placeholder="Password"
-                    type="password"
-                    value={teacher.password}
-                    onChange={(e) => updateBulkRow(index, 'password', e.target.value)}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={addBulkRow}
-            className="w-full"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add Another Teacher
-          </Button>
-          <div className="flex justify-end gap-3 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setIsBulkModalOpen(false)}
-              disabled={isSubmitting}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              className="text-white"
-              style={{ background: theme.gradient }}
-            >
-              {isSubmitting ? 'Creating...' : `Create ${bulkTeachers.length} Teachers`}
-            </Button>
-          </div>
-        </form>
-      </Modal>
+        departments={departments}
+        onBulkCreate={bulkCreateTeachers}
+      />
 
       {/* Delete Confirmation */}
       <ConfirmDialog
@@ -497,3 +340,4 @@ export const ManageTeachers: React.FC = () => {
 };
 
 export default ManageTeachers;
+

@@ -294,6 +294,8 @@ export const ManageStudents: React.FC = () => {
         searchKeys={['first_name', 'last_name', 'email', 'academic_year']}
         isLoading={isLoading}
         emptyMessage="No students found"
+        scrollable
+        maxHeight="65vh"
       />
 
       {/* Create/Edit Modal */}

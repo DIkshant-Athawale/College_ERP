@@ -1430,6 +1430,89 @@ router.post("/create_teacher", authenticate, authorize("admin"), async (req, res
 }
 )
 
+// Bulk create teachers — per-row error reporting (CSV upload support)
+router.post("/bulk_create_teachers", authenticate, authorize("admin"), async (req, res) => {
+  const conn = await pool.getConnection();
+
+  try {
+    const teachers = req.body.teachers;
+
+    if (!Array.isArray(teachers) || teachers.length === 0) {
+      return res.status(400).json({ message: "No teacher data provided" });
+    }
+
+    if (teachers.length > 500) {
+      return res.status(400).json({ message: "Maximum 500 teachers per batch" });
+    }
+
+    await conn.beginTransaction();
+
+    const results = { success: [], failed: [] };
+
+    for (let i = 0; i < teachers.length; i++) {
+      const teacher = teachers[i];
+      const rowNum = i + 1;
+
+      try {
+        const {
+          first_name, last_name, email, primary_phone,
+          alternate_phone, department_id, password, designation
+        } = teacher;
+
+        // Validation
+        if (!first_name || !last_name || !email || !primary_phone || !department_id || !password || !designation) {
+          results.failed.push({ row: rowNum, email: email || `Row ${rowNum}`, reason: "Required fields missing" });
+          continue;
+        }
+
+        // Hash password
+        const saltRounds = 10;
+        const hashedPassword = await bcrypt.hash(String(password), saltRounds);
+
+        // Insert teacher (role defaults to 'faculty')
+        const [result] = await conn.execute(
+          `INSERT INTO teachers
+            (first_name, last_name, email, password, role, primary_phone, alternate_phone, department_id, designation)
+            VALUES (?, ?, ?, ?, 'faculty', ?, ?, ?, ?)`,
+          [
+            first_name.trim(), last_name.trim(), email.trim(),
+            hashedPassword,
+            String(primary_phone).trim(), alternate_phone ? String(alternate_phone).trim() : null,
+            Number(department_id), designation.trim()
+          ]
+        );
+
+        results.success.push({ row: rowNum, teacher_id: result.insertId, email: email.trim() });
+
+      } catch (rowError) {
+        if (rowError.code === "ER_DUP_ENTRY") {
+          results.failed.push({ row: rowNum, email: teacher.email || `Row ${rowNum}`, reason: "Email already registered" });
+        } else {
+          results.failed.push({ row: rowNum, email: teacher.email || `Row ${rowNum}`, reason: rowError.message || "Unknown error" });
+        }
+      }
+    }
+
+    await conn.commit();
+
+    res.status(201).json({
+      message: `Bulk import complete: ${results.success.length} created, ${results.failed.length} failed`,
+      total: teachers.length,
+      created: results.success.length,
+      failed_count: results.failed.length,
+      success: results.success,
+      failed: results.failed,
+    });
+
+  } catch (error) {
+    await conn.rollback();
+    console.error(error);
+    res.status(500).json({ message: "Internal server error" });
+  } finally {
+    conn.release();
+  }
+});
+
 
 
 //get filtered courses 

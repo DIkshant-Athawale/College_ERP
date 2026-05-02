@@ -162,6 +162,15 @@ export interface BulkCreateStudentsResponse {
   failed: { row: number; email: string; reason: string }[];
 }
 
+export interface BulkCreateTeachersResponse {
+  message: string;
+  total: number;
+  created: number;
+  failed_count: number;
+  success: { row: number; teacher_id: number; email: string }[];
+  failed: { row: number; email: string; reason: string }[];
+}
+
 // Timetable Types
 export interface TimetableSlot {
   timetable_id: number;

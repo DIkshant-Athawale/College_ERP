@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { teachersApi } from '@/api/teachers';
-import type { Teacher, CreateTeacherRequest, EditTeacherRequest } from '@/types';
+import type { Teacher, CreateTeacherRequest, EditTeacherRequest, BulkCreateTeachersResponse } from '@/types';
 import { toast } from 'sonner';
 
 export const useTeachers = () => {
@@ -47,6 +47,22 @@ export const useTeachers = () => {
     }
   };
 
+  const bulkCreateTeachers = async (data: CreateTeacherRequest[]): Promise<BulkCreateTeachersResponse | null> => {
+    try {
+      const result = await teachersApi.bulkCreate(data);
+      if (result.created > 0) {
+        toast.success(`${result.created} teacher(s) created successfully!`);
+      }
+      if (result.failed_count > 0) {
+        toast.warning(`${result.failed_count} teacher(s) failed to import.`);
+      }
+      await fetchTeachers();
+      return result;
+    } catch (err) {
+      return null;
+    }
+  };
+
   const editTeacher = async (id: number, data: EditTeacherRequest) => {
     try {
       await teachersApi.edit(id, data);
@@ -76,9 +92,11 @@ export const useTeachers = () => {
     fetchTeachers,
     fetchTeachersByDepartment,
     createTeachers,
+    bulkCreateTeachers,
     editTeacher,
     deleteTeacher,
   };
 };
 
 export default useTeachers;
+

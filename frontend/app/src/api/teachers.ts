@@ -3,7 +3,8 @@ import type {
   Teacher,
   CreateTeacherRequest,
   EditTeacherRequest,
-  TeachersResponse
+  TeachersResponse,
+  BulkCreateTeachersResponse
 } from '@/types';
 
 export const teachersApi = {
@@ -21,6 +22,11 @@ export const teachersApi = {
   create: async (data: CreateTeacherRequest[]): Promise<{ affectedRows: number; message?: string }> => {
     // Backend uses singular /create_teacher but accepts array
     const response = await apiClient.post('/admin/create_teacher', data);
+    return response.data;
+  },
+
+  bulkCreate: async (teachers: CreateTeacherRequest[]): Promise<BulkCreateTeachersResponse> => {
+    const response = await apiClient.post('/admin/bulk_create_teachers', { teachers });
     return response.data;
   },
 
@@ -47,3 +53,4 @@ export const teachersApi = {
     return response.data;
   },
 };
+

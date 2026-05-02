@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { useTheme } from '@/context/ThemeContext';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -35,6 +35,8 @@ interface DataTableProps<T> {
   itemsPerPage?: number;
   emptyMessage?: string;
   isLoading?: boolean;
+  scrollable?: boolean;
+  maxHeight?: string;
 }
 
 export function DataTable<T>({
@@ -46,6 +48,8 @@ export function DataTable<T>({
   itemsPerPage = 10,
   emptyMessage = 'No data found',
   isLoading = false,
+  scrollable = false,
+  maxHeight = '65vh',
 }: DataTableProps<T>) {
   const { theme } = useTheme();
   const [searchQuery, setSearchQuery] = useState('');
@@ -82,12 +86,13 @@ export function DataTable<T>({
     });
   }, [filteredData, sortConfig]);
 
-  // Paginate data
+  // Paginate data (skipped when scrollable)
   const totalPages = Math.ceil(sortedData.length / itemsPerPage);
   const paginatedData = useMemo(() => {
+    if (scrollable) return sortedData;
     const start = (currentPage - 1) * itemsPerPage;
     return sortedData.slice(start, start + itemsPerPage);
-  }, [sortedData, currentPage, itemsPerPage]);
+  }, [sortedData, currentPage, itemsPerPage, scrollable]);
 
   const handleSort = (key: string) => {
     setSortConfig((current) => {
@@ -153,9 +158,18 @@ export function DataTable<T>({
         </div>
       )}
 
-      <div className="border rounded-lg overflow-hidden" style={{ borderColor: theme.border }}>
+      <div
+        className="border rounded-lg overflow-hidden"
+        style={{
+          borderColor: theme.border,
+          ...(scrollable ? { maxHeight, overflowY: 'auto', scrollBehavior: 'smooth' } : {}),
+        }}
+      >
         <Table>
-          <TableHeader>
+          <TableHeader
+            className={scrollable ? 'sticky top-0 z-10' : ''}
+            style={scrollable ? { background: theme.surface || theme.card || '#1a1a2e' } : {}}
+          >
             <TableRow style={{ background: `${theme.primary}05` }}>
               {columns.map((column) => (
                 <TableHead key={column.key} style={{ color: theme.text }}>
@@ -205,7 +219,7 @@ export function DataTable<T>({
         </Table>
       </div>
 
-      {totalPages > 1 && (
+      {!scrollable && totalPages > 1 && (
         <div className="flex items-center justify-between">
           <p className="text-sm" style={{ color: theme.textMuted }}>
             Showing {(currentPage - 1) * itemsPerPage + 1} to{' '}
@@ -233,6 +247,12 @@ export function DataTable<T>({
             </Button>
           </div>
         </div>
+      )}
+
+      {scrollable && sortedData.length > 0 && (
+        <p className="text-sm" style={{ color: theme.textMuted }}>
+          Showing all {sortedData.length} entries
+        </p>
       )}
     </div>
   );
