@@ -18,7 +18,7 @@ async function startServer() {
     const server = createServer(app);
     const io = new Server(server, {
         cors: {
-            origin: true, // or your frontend url
+            origin: process.env.FRONTEND_URL || true,
             credentials: true,
             methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
         }
@@ -36,7 +36,7 @@ async function startServer() {
     app.use(express.json());
     app.use(cookieParser());
     app.use(cors({
-        origin: true,
+        origin: process.env.FRONTEND_URL || true,
         credentials: true
     }));
 
