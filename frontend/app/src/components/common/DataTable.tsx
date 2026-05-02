@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useTheme } from '@/context/ThemeContext';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -168,7 +168,7 @@ export function DataTable<T>({
         <Table>
           <TableHeader
             className={scrollable ? 'sticky top-0 z-10' : ''}
-            style={scrollable ? { background: theme.surface || theme.card || '#1a1a2e' } : {}}
+            style={scrollable ? { background: theme.surface || '#1a1a2e' } : {}}
           >
             <TableRow style={{ background: `${theme.primary}05` }}>
               {columns.map((column) => (

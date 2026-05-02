@@ -4,7 +4,7 @@ import { useStudents, useDepartments } from '@/hooks';
 import { Modal, FormSelect, FormInput, DataTable, ConfirmDialog } from '@/components/common';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp, UserX, UserCheck, Filter, Search } from 'lucide-react';
+import { TrendingUp, UserX, UserCheck, Search } from 'lucide-react';
 import type { Student } from '@/types';
 
 const SEMESTER_OPTIONS = [

@@ -29,7 +29,7 @@ const SEMESTER_OPTIONS = [
 export const ManageStudents: React.FC = () => {
   const { theme } = useTheme();
   const { departments } = useDepartments();
-  const { students, isLoading, fetchFilteredStudents, createStudent, bulkCreateStudents, editStudent, deleteStudent, markDetained } = useStudents();
+  const { students, isLoading, fetchFilteredStudents, createStudent, bulkCreateStudents, editStudent, deleteStudent } = useStudents();
 
   const [filters, setFilters] = useState({
     department_id: '',

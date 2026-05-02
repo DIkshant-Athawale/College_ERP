@@ -21,7 +21,8 @@ interface ConfirmDialogProps {
   confirmText?: string;
   cancelText?: string;
   isLoading?: boolean;
-  variant?: 'danger' | 'warning' | 'info';
+  variant?: 'danger' | 'warning' | 'info' | 'success';
+  children?: React.ReactNode;
 }
 
 export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
@@ -34,6 +35,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   cancelText = 'Cancel',
   isLoading = false,
   variant = 'danger',
+  children,
 }) => {
   const { theme } = useTheme();
 
@@ -41,6 +43,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
     danger: theme.danger,
     warning: theme.warning,
     info: theme.info,
+    success: theme.success,
   };
 
   const confirmColor = variantColors[variant];
@@ -61,6 +64,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
           <AlertDialogDescription style={{ color: theme.textMuted }} className="pt-2">
             {description}
           </AlertDialogDescription>
+          {children && <div className="mt-4">{children}</div>}
         </AlertDialogHeader>
         <AlertDialogFooter className="gap-2">
           <AlertDialogCancel

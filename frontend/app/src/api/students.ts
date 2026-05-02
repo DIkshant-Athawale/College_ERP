@@ -3,7 +3,6 @@ import type {
   Student,
   CreateStudentRequest,
   EditStudentRequest,
-  StudentsResponse,
   StudentFilters,
   PromoteStudentsRequest,
   DetainStudentRequest,
